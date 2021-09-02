@@ -1,0 +1,8 @@
+-- show courses for a particular term code (sis_source_id)
+
+SELECT et.sis_source_id, cd.code, cd.name
+
+FROM "canvasdata_prod"."enrollment_term_dim" et
+  JOIN canvasdata_prod.course_dim cd on cd.enrollment_term_id = et.id
+
+WHERE et.sis_source_id = '120218'
