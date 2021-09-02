@@ -1,0 +1,21 @@
+-- count the various enrollment types in Canvas across the institution
+-- this query discludes any "Student View" enrollment as well as
+-- inactive, deleted, completed or rejected enrollment workflow_state
+
+SELECT distinct ed.type, count(ed.type)
+
+FROM "canvasdata_prod"."enrollment_dim" ed 
+  JOIN canvasdata_prod.user_dim ud on ud.id = ed.user_id
+  JOIN canvasdata_prod.course_dim cd on cd.id = ed.course_id
+  JOIN canvasdata_prod.account_dim ad on ad.id = cd.account_id
+  JOIN canvasdata_prod.enrollment_term_dim etd on etd.id = cd.enrollment_term_id
+  JOIN canvasdata_prod.pseudonym_dim pd on pd.user_id = ud.id
+  JOIN canvasdata_prod.course_section_dim csd on csd.course_id = cd.id
+
+WHERE etd.sis_source_id = 'MyTermID'
+  AND ed.type not like 'StudentViewEnrollment'
+  AND (ed.workflow_state != 'inactive' OR ed.workflow_state != 'deleted' 
+       OR ed.workflow_state != 'completed' OR ed.workflow_state != 'rejected')
+  AND csd.sis_source_id is NULL
+
+GROUP BY ed.type
