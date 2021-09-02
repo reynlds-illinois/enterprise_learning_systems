@@ -1,0 +1,14 @@
+-- my first attempt at a user activity log using the requests table
+
+SELECT r.timestamp, pd.sis_user_id, r.session_id, r.remote_ip, cd.code, r.web_application_controller, r.web_application_action, r.user_agent, r.url
+
+FROM "canvasdata_prod"."requests" r
+  JOIN canvasdata_prod.user_dim ud on ud.id = r.user_id
+  JOIN canvasdata_prod.pseudonym_dim pd on pd.user_id = ud.id
+  JOIN canvasdata_prod.course_dim cd on cd.id = r.course_id
+
+WHERE pd.sis_user_id = 'MyUsername'
+  AND r.url NOT LIKE '%SAML2%'
+  AND r.url NOT LIKE '%saml'
+
+ORDER BY r.timestamp desc
