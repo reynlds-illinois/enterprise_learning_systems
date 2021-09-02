@@ -1,0 +1,8 @@
+-- show external LTI's that are in use in courses
+
+SELECT cd.sis_source_id, etad.name, etad.url, etad.workflow_state, etad.tool_id, etad.privacy_level, etad.created_at
+
+FROM "canvasdata_prod"."external_tool_activation_dim" etad
+  JOIN canvasdata_prod.course_dim cd on cd.id = etad.course_id
+
+ORDER BY etad.created_at asc
