@@ -1,0 +1,9 @@
+-- select some basic user and login info
+
+SELECT ccd.canvas_id, pd.integration_id, pd.sis_user_id, ud.sortable_name, pd.last_login_at, pd.last_login_ip
+
+FROM "canvasdata_prod"."communication_channel_dim" ccd
+  JOIN canvasdata_prod.user_dim ud on ud.id = ccd.user_id
+  JOIN canvasdata_prod.pseudonym_dim pd on pd.user_id = ud.id
+
+WHERE (address = 'user1@myschool.edu' OR address = 'user2@myschool.edu')
