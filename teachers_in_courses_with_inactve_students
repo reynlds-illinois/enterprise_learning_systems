@@ -1,0 +1,26 @@
+-- return Teachers that are in a course with at least 1 "inactive" student enrollment
+
+SELECT distinct etd.sis_source_id, cd.sis_source_id, pd.sis_user_id, ed.type
+
+FROM "canvasdata_prod"."enrollment_dim" ed 
+  JOIN canvasdata_prod.user_dim ud on ud.id = ed.user_id
+  JOIN canvasdata_prod.course_dim cd on cd.id = ed.course_id
+  JOIN canvasdata_prod.course_section_dim csd on csd.course_id = cd.id
+  JOIN canvasdata_prod.pseudonym_dim pd on pd.user_id = ud.id
+  JOIN canvasdata_prod.enrollment_term_dim etd on etd.id = cd.enrollment_term_id
+
+WHERE ed.type like 'TeacherEnrollment'
+  AND cd.sis_source_id IN 
+
+    (SELECT cd.sis_source_id FROM "canvasdata_prod"."enrollment_dim" ed 
+      JOIN canvasdata_prod.user_dim ud on ud.id = ed.user_id
+      JOIN canvasdata_prod.course_dim cd on cd.id = ed.course_id
+      JOIN canvasdata_prod.course_section_dim csd on csd.course_id = cd.id
+      JOIN canvasdata_prod.pseudonym_dim pd on pd.user_id = ud.id
+      JOIN canvasdata_prod.enrollment_term_dim etd on etd.id = cd.enrollment_term_id
+    WHERE ed.type like 'StudentEnrollment' 
+      AND ed.workflow_state like 'inactive')
+
+  AND pd.sis_user_id is not NULL
+
+ORDER BY cd.sis_source_id
