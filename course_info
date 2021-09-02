@@ -1,0 +1,7 @@
+-- select some basic course info and sort it by created date, ascending
+
+SELECT cd.code, cd.sis_source_id, cd.name, cd.created_at, cd.workflow_state
+
+FROM "canvasdata_prod"."course_dim" cd
+
+ORDER BY  created_at asc
