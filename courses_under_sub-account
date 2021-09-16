@@ -1,0 +1,18 @@
+-- select all courses under a particular sub-account
+-- can be modified to include only active courses...update cd.workflow_state:
+--   completed  (course has been hard concluded)
+--   created    (course has been created, but not published)
+--   deleted    (course has been deleted)
+--   available  (course is published, and not hard concluded)
+--   claimed    (course has been undeleted, and is not published)
+
+SELECT DISTINCT cd.workflow_state as state, cd.code as course_id, etd.sis_source_id as term_id, ad.subaccount1 as unit_code, ad.subaccount2 as dept_code
+
+FROM "canvasdata_prod"."course_dim" cd
+  JOIN canvasdata_prod.account_dim ad on ad.id = cd.account_id
+  JOIN canvasdata_prod.enrollment_term_dim etd on etd.id = cd.enrollment_term_id
+
+WHERE ad.subaccount1 like 'My_Sub_Account'         -- <- change sub-account here
+  AND cd.workflow_state not like 'deleted'         -- 
+
+ORDER BY cd.code asc
