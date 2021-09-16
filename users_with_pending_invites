@@ -1,0 +1,17 @@
+-- this will pull ALL pending enrollment invitations
+-- there are a number of items left in here so that this can be customized.
+
+SELECT etd.sis_source_id as term_id, ed.type as course_role, pd.sis_user_id as netid, 
+  cd.code as course_id, ed.workflow_state
+
+FROM "canvasdata_prod"."enrollment_dim" ed 
+  JOIN canvasdata_prod.user_dim ud on ud.id = ed.user_id
+  JOIN canvasdata_prod.course_dim cd on cd.id = ed.course_id
+--  JOIN canvasdata_prod.account_dim ad on ad.id = cd.account_id
+  JOIN canvasdata_prod.enrollment_term_dim etd on etd.id = cd.enrollment_term_id
+  JOIN canvasdata_prod.pseudonym_dim pd on pd.user_id = ud.id
+  JOIN canvasdata_prod.course_section_dim csd on csd.course_id = cd.id
+
+WHERE etd.sis_source_id = '120218'            -- < TERM CODE UPDATE (if desired)
+  AND ed.workflow_state = 'invited'
+--  AND csd.sis_source_id is NULL
