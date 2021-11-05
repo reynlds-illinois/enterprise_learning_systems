@@ -1,0 +1,10 @@
+-- Simple authentication look up in Canvas Data
+-- update the pd.sis_user_id with the desired NetID
+
+SELECT user.sortable_name, pf.login_count, pd.unique_name, pd.sis_user_id, pd.last_login_at
+
+FROM "canvasdata_prod"."pseudonym_dim" pd
+  JOIN canvasdata_prod.user_dim user on pd.user_id = user.id
+  JOIN canvasdata_prod.pseudonym_fact pf on pf.pseudonym_id = pd.id
+
+WHERE pd.sis_user_id like 'MyUsername'    -- < change this as needed
