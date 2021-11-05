@@ -1,0 +1,15 @@
+-- This query pulls single user enrollment data for a user in courses (all enrollment states are displayed).
+-- Modify the NETID field for a different user. This query mimics the data provided by the Provisioning Report
+-- regarding "active" enrollments.
+
+SELECT ed.type, pd.sis_user_id, ed.workflow_state, cd.code as course_id, cd.canvas_id as course_canvas_id, etd.sis_source_id as term_id
+
+FROM "canvasdata_prod"."enrollment_dim" ed
+  JOIN canvasdata_prod.user_dim ud on ud.id = ed.user_id
+  JOIN canvasdata_prod.course_dim cd on cd.id = ed.course_id
+  JOIN canvasdata_prod.pseudonym_dim pd on pd.user_id = ud.id
+  JOIN canvasdata_prod.enrollment_term_dim etd on etd.id = cd.enrollment_term_id
+
+WHERE pd.sis_user_id like 'MyUsername'              -- < Change as needed
+
+ORDER BY ed.workflow_state, cd.code
