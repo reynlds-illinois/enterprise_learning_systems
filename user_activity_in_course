@@ -1,0 +1,27 @@
+-- these will have to be uncommented depending on the need...see qualifiers below also
+SELECT r.timestamp, r.id, r.remote_ip, pd.sis_user_id, cd.sis_source_id, r.session_id, r.http_status, r.http_method, r.url
+-- QUIZ:  SELECT r.timestamp, pd.sis_user_id, cd.sis_source_id, r.session_id, qd.name as quiz, r.http_status, r.http_method, r.url
+-- ASSIGNMENT:  SELECT r.timestamp, r.id, r.remote_ip, pd.sis_user_id, cd.sis_source_id, r.session_id, ad.title as assignment, r.http_status, r.http_method, r.url
+-- FILE:  --SELECT r.timestamp, r.id, r.remote_ip, pd.sis_user_id, cd.sis_source_id, r.session_id, fd.display_name, r.http_status, r.http_method, r.url
+
+FROM "canvasdata_prod"."requests" r
+  JOIN canvasdata_prod.user_dim ud on ud.id = r.user_id
+  JOIN canvasdata_prod.pseudonym_dim pd on pd.user_id = ud.id
+  JOIN canvasdata_prod.course_dim cd on cd.id = r.course_id
+  JOIN canvasdata_prod.quiz_dim qd on qd.id = r.quiz_id
+  JOIN canvasdata_prod.assignment_dim ad on ad.course_id = cd.id
+  JOIN canvasdata_prod.file_dim fd on fd.course_id = cd.id
+
+-- uncomment and provide items below depending on what you need
+-- also date range is provided by default...comment out if needed
+WHERE r.course_id is not NULL
+  AND pd.sis_user_id like 'MyUsername'
+  --AND cd.sis_source_id like '%----------%'    -- course ID
+  --AND r.http_status = '200'                   -- HTTP status (if desired)
+  --AND r.session_id like '%----------%'        -- specific session ID
+  --AND qd.name like '%----------%'             -- quiz name
+  --AND ad.title like '%----------%'            -- assignment name
+  --AND fd.display_name like '%----------%'     -- file name
+  AND r.timestamp BETWEEN TIMESTAMP '2021-08-23 00:00:00' AND TIMESTAMP '2021-09-07 23:59:59'
+  
+ORDER BY r.timestamp desc
