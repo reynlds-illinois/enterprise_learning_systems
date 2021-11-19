@@ -1,3 +1,8 @@
+# canvas_rest_api
+Canvas REST API
+
+https://canvas.instructure.com/doc/api/index.html
+
 # canvas_data_queries
 Canvas Data queries through Athena on AWS.
 
