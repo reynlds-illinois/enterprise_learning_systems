@@ -1,0 +1,11 @@
+select ad.name, count(ad.name) as COURSES
+
+FROM "canvasdata_prod"."enrollment_dim" ed 
+  JOIN canvasdata_prod.user_dim ud on ud.id = ed.user_id
+  JOIN canvasdata_prod.course_dim cd on cd.id = ed.course_id
+  JOIN canvasdata_prod.account_dim ad on ad.id = cd.account_id
+
+WHERE cd.workflow_state not like 'deleted'
+   AND cd.sis_source_id like '%_120218_%'
+
+GROUP BY ad.name
