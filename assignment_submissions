@@ -1,0 +1,15 @@
+-- query for pulling assignment submission data and score(s)
+SELECT pd.sis_user_id as NetID, cd.sis_source_id as CourseID, sf.score, sd.grade, sd.published_grade, sd.workflow_state, sd.submitted_at, sd.graded_at, ad.title
+FROM "canvasdata_prod"."submission_dim" sd
+  JOIN canvasdata_prod.submission_fact sf on sf.submission_id = sd.id
+  JOIN canvasdata_prod.user_dim ud on ud.id = sd.user_id
+  JOIN canvasdata_prod.course_dim cd on cd.id = sf.course_id
+  JOIN canvasdata_prod.assignment_dim ad on ad.id = sd.assignment_id
+  JOIN canvasdata_prod.pseudonym_dim pd on pd.user_id = ud.id
+WHERE sd.workflow_state = 'submitted'
+  AND sd.graded_at is not NULL
+--  AND pd.sis_user_id            -- < username
+--  AND cd.sis_source_id          -- < course ID
+--  AND sd.submitted_at between timestamp '2022-02-01 00:00:00' and timestamp '2022-02-14 23:59:59'
+ORDER BY sd.submitted_at
+limit 100;
