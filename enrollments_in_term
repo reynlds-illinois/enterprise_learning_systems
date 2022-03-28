@@ -1,0 +1,16 @@
+-- a query to bring back enrollments within a single term
+SELECT distinct pd.sis_user_id as NetID,
+                ed.type, ad.name as "SUB-ACCT", 
+                cd.code as COURSE_ID, cd.name,
+                cd.created_at, etd.sis_source_id
+FROM "canvasdata_prod"."enrollment_dim" ed
+  JOIN canvasdata_prod.user_dim ud on ud.id = ed.user_id
+  JOIN canvasdata_prod.course_dim cd on cd.id = ed.course_id
+  JOIN canvasdata_prod.pseudonym_dim pd on pd.user_id = ud.id
+  JOIN canvasdata_prod.enrollment_term_dim etd on etd.id = cd.enrollment_term_id
+  JOIN canvasdata_prod.course_section_dim csd on ed.course_section_id = csd.id
+  JOIN canvasdata_prod.account_dim ad on ad.id = cd.account_id
+WHERE etd.sis_source_id = '120221'           -- < term SIS ID
+--WHERE cd.code like '%_MYTERM_%'            -- < course SIS ID
+--  AND cd.workflow_state != 'deleted'
+ORDER BY cd.code, pd.sis_user_id
