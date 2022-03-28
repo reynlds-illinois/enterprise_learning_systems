@@ -1,0 +1,13 @@
+-- query to pull basic user account information from Canvas Data
+SELECT ud.canvas_id, 
+       pd.sis_user_id as NetID, 
+       pd.integration_id as UIN, 
+       ud.sortable_name, 
+       ud.time_zone, 
+       pd.created_at, 
+       pd.updated_at, 
+       pd.current_login_at, 
+       pd.current_login_ip
+FROM "canvasdata_prod"."user_dim" ud
+  JOIN canvasdata_prod.pseudonym_dim pd on pd.user_id = ud.id
+WHERE pd.sis_user_id = 'MYUSERNAME'       -- < change as needed
