@@ -1,0 +1,19 @@
+-- a query to bring back enrollments within a single course
+-- update course SIS ID or space, and enrollment type below (if desired)
+
+SELECT ed.type, pd.sis_user_id, ud.sortable_name, cd.code, csd.sis_source_id, etd.sis_source_id
+
+FROM "canvasdata_prod"."enrollment_dim" ed
+  JOIN canvasdata_prod.user_dim ud on ud.id = ed.user_id
+  JOIN canvasdata_prod.course_dim cd on cd.id = ed.course_id
+  JOIN canvasdata_prod.pseudonym_dim pd on pd.user_id = ud.id
+  JOIN canvasdata_prod.enrollment_term_dim etd on etd.id = cd.enrollment_term_id
+  JOIN canvasdata_prod.course_section_dim csd on ed.course_section_id = csd.id
+
+WHERE cd.code like 'cpsc_113_120221_212037'            -- < either space number or course ID here
+  AND csd.sis_source_id like 'cpsc_113_b_212037'       -- < section SIS ID
+  AND pd.sis_user_id is not NULL
+  AND ed.type = 'StudentEnrollment'                    -- < can choose enrollment type
+--                'TeacherEnrollment'
+
+ORDER BY pd.sis_user_id
