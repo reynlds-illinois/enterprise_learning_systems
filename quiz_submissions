@@ -1,0 +1,15 @@
+-- this query pulls quiz submission data for completed quizzes
+-- individual items below can be uncommented to stratify the results
+
+SELECT pd.sis_user_id, cd.sis_source_id, qd.name, qsf.score, qsf.kept_score, qsf.date, qsd.started_at, qsd.finished_at
+FROM "canvasdata_prod"."quiz_submission_dim" qsd
+  JOIN canvasdata_prod.user_dim ud on qsd.user_id = ud.id
+  JOIN canvasdata_prod.pseudonym_dim pd on pd.user_id = ud.id
+  JOIN canvasdata_prod.quiz_dim qd on qsd.quiz_id = qd.id
+  JOIN canvasdata_prod.course_dim cd on qd.course_id = cd.id
+  JOIN canvasdata_prod.quiz_submission_fact qsf on qsd.id = qsf.quiz_submission_id
+--WHERE pd.sis_user_id = 'myUsername'
+--WHERE (qsd.started_at is not NULL AND qsd.finished_at is not NULL)
+WHERE cd.sis_source_id = 'eng_100_120218_209544'
+--WHERE qd.name = 'Prelab 6: Calcium'
+ORDER BY pd.sis_user_id
