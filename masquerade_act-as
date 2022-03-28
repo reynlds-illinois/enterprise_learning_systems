@@ -1,0 +1,14 @@
+--shows the masquerade session/actions
+SELECT ru.canvas_id, ru.name AS masquerading, masq.canvas_id, masq.name AS as_user, timestamp_day, COUNT(r.id) AS requests
+FROM canvasdata_prod.requests r
+  JOIN canvasdata_prod.user_dim ru ON (r.real_user_id = ru.id)
+  JOIN canvasdata_prod.user_dim masq ON (r.user_id = masq.id)
+  JOIN canvasdata_prod.pseudonym_dim pd ON (pd.user_id = masq.id AND pd.workflow_state != 'deleted' AND pd.position = 1)
+WHERE r.real_user_id != r.user_id
+  AND r.real_user_id IS NOT NULL
+  AND r.user_id IS NOT NULL
+  AND masq.name NOT like 'Test Student'      -- as_user
+  --AND ru.name like '#########'             -- admin (change this to display name of admin)
+GROUP BY ru.canvas_id, ru.name, masq.canvas_id, masq.name, pd.sis_user_id, timestamp_day, r.remote_ip
+--ORDER BY ru.name, masq.name, timestamp_day
+ORDER BY requests desc
