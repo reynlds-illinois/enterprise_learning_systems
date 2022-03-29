@@ -1,0 +1,15 @@
+--return completed student enrollments per course or such
+--the request table does not record the completed enrollment
+--https://{url}/courses/{course_id}/
+
+--SELECT count(*) 
+SELECT pd.sis_user_id, ed.id as ENROLL_ID, cd.canvas_id as C_COURSE_ID, cd.sis_source_id as SIS_COURSE_ID, csd.sis_source_id as SECTION_ID, ed.workflow_state, ed.created_at, ed.completed_at
+FROM "canvasdata_prod"."enrollment_dim" ed
+  JOIN canvasdata_prod.course_dim cd on cd.id = ed.course_id
+  JOIN canvasdata_prod.user_dim ud on ud.id = ed.user_id
+  JOIN canvasdata_prod.pseudonym_dim pd on ud.id = pd.user_id
+  JOIN canvasdata_prod.course_section_dim csd on csd.id = ed.course_section_id
+WHERE ed.workflow_state = 'completed'
+  AND ed.type = 'StudentEnrollment'
+  -- AND cd.sis_source_id = 'XXXXXXXXXXXXXXXX'             -- < course ID
+  AND ed.completed_at > timestamp '2022-03-01'             -- < date info
