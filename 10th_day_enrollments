@@ -1,33 +1,16 @@
 -- count the various enrollment types in Canvas across the institution
--- this query discludes any "Student View" enrollment as well as
--- inactive, deleted, completed or rejected enrollment workflow_state
+-- this query discludes any "Student View" enrollment and only includes
+-- the active or invited workflow_state on the enrollment
+-- Further, there is a line to exclude the incoming sub-account (as it's not live)
 
--- use this line to select enrollment types totaled by course ID
---SELECT cd.sis_source_id, ed.type as enroll_type, count(ed.type) as enroll_count, cd.workflow_state, ad.name, cd.name, cd.created_at, cd.start_at, cd.conclude_at
-
--- use this line to select enrollment types totaled overall
-SELECT ed.type as enroll_type, count(ed.type) as total
-
-FROM "canvasdata_prod"."enrollment_dim" ed 
-  JOIN canvasdata_prod.user_dim ud on ud.id = ed.user_id
+SELECT distinct ed.type, count(ed.type) AS TOTAL
+FROM canvasdata_prod.enrollment_dim ed
   JOIN canvasdata_prod.course_dim cd on cd.id = ed.course_id
-  JOIN canvasdata_prod.account_dim ad on ad.id = cd.account_id
   JOIN canvasdata_prod.enrollment_term_dim etd on etd.id = cd.enrollment_term_id
-  JOIN canvasdata_prod.pseudonym_dim pd on pd.user_id = ud.id
-  JOIN canvasdata_prod.course_section_dim csd on csd.course_id = cd.id
-
-WHERE etd.sis_source_id = '120218'
-  AND ed.type not like 'StudentViewEnrollment'
-  AND (ed.workflow_state not like 'inactive' OR ed.workflow_state != 'deleted' 
-       OR ed.workflow_state != 'completed' OR ed.workflow_state != 'rejected')
---  AND ed.workflow_state like 'active'
-  AND cd.workflow_state not like 'deleted'
-  AND csd.sis_source_id is NULL
-
--- use these lines to group/order  when totalling by course ID
---GROUP BY cd.sis_source_id, cd.name, ed.type, cd.workflow_state, ad.name, cd.name, cd.created_at, cd.start_at, cd.conclude_at
---ORDER BY cd.sis_source_id, cd.name
-
--- use this line to group when totalling overall
+  JOIN canvasdata_prod.account_dim ad on ad.id = cd.account_id
+WHERE etd.sis_source_id = '120221'
+  AND (ed.workflow_state = 'active' OR ed.workflow_state = 'invited')
+  AND ed.type != 'StudentViewEnrollment'
+  AND ad.name != 'MIGRATED_COURSES' AND ad.name != 'Canvas Demo Courses'
 GROUP BY ed.type
-ORDER BY count(ed.type) desc
+
