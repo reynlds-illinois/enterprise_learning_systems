@@ -1,0 +1,14 @@
+-- Because of the delay in assembling/delivering Canvas Data, there is a 36 to 48 hour delay in some tables.
+-- This query pulls courses from 2 days ago (the most recent). There are numerous options outlined below.
+
+SELECT cd.sis_source_id,
+  date_format(cd.created_at, '%Y-%m-%d') as courseCreateDate,
+  etd.sis_source_id, cd.name
+FROM "canvasdata_prod"."course_dim" cd
+  JOIN canvasdata_prod.enrollment_term_dim etd on etd.id = cd.enrollment_term_id
+WHERE cd.sis_source_id is NOT NULL
+-- NOTE:  this line checks for a relative date that is 2 days older than today
+    AND date_format(cd.created_at, '%Y-%m-%d') = date_format(current_date - interval '2' day, '%Y-%m-%d')
+-- NOTE:  you can manually enter a specific date here
+--  AND date_format(cd.created_at, '%Y-%m-%d') = '2022-04-18'
+ORDER BY date_format(cd.created_at, '%Y-%m-%d') desc
