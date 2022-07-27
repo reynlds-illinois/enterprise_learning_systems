@@ -1,7 +1,7 @@
 -- count the various enrollment types in Canvas across the institution
 -- this query discludes any "Student View" enrollment and only includes
 -- the active or invited workflow_state on the enrollment
--- Further, there is a line to exclude the incoming sub-account (as it's not live)
+-- Further, there is a line to exclude sub-accounts (as they are irrelevant to live courses)
 
 SELECT distinct ed.type, count(ed.type) AS TOTAL
 FROM canvasdata_prod.enrollment_dim ed
