@@ -1,0 +1,18 @@
+-- showing each enrollment created per day, only active/invited enrollments,
+-- excluding Student View and Test Student
+-- a line below can be used to squeeze down to a single term
+
+SELECT distinct date(ed.created_at) as EnrollDate, pd.sis_user_id, cd.sis_source_id
+FROM "canvasdata_prod"."enrollment_dim" ed
+  JOIN canvasdata_prod.course_dim cd on cd.id = ed.course_id
+  JOIN canvasdata_prod.enrollment_term_dim etd on etd.id = cd.enrollment_term_id
+  JOIN canvasdata_prod.account_dim ad on ad.id = cd.account_id
+  JOIN canvasdata_prod.user_dim ud on ud.id = ed.user_id
+  JOIN canvasdata_prod.pseudonym_dim pd on pd.user_id = ud.id
+WHERE ad.name != 'MIGRATED_COURSES' AND ad.name != 'Canvas Demo Courses'
+--  AND etd.sis_source_id = '120225'
+  AND (ed.workflow_state = 'active' OR ed.workflow_state = 'invited')
+  AND ed.type != 'StudentViewEnrollment'
+  AND ud.name NOT LIKE 'Test Student'
+GROUP BY date(ed.created_at), cd.sis_source_id, pd.sis_user_id
+ORDER BY date(ed.created_at) desc, cd.sis_source_id, pd.sis_user_id
