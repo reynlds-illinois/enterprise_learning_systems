@@ -1,0 +1,17 @@
+-- this Enrollments query replicates the enrollment report in Provisioning
+-- Using "distinct" will most accurately replicate what you see in Provisioning
+--
+SELECT distinct etd.sis_source_id, ed.type, pd.sis_user_id, cd.sis_source_id
+--, csd.sis_source_id          -- <- section_id
+FROM "canvasdata_prod"."enrollment_dim" ed
+  join canvasdata_prod.user_dim ud on ud.id = ed.user_id
+  join canvasdata_prod.course_dim cd on cd.id = ed.course_id
+  JOIN canvasdata_prod.pseudonym_dim pd on pd.user_id = ud.id
+  JOIN canvasdata_prod.enrollment_term_dim etd on etd.id = cd.enrollment_term_id
+  JOIN canvasdata_prod.course_section_dim csd on csd.course_id = cd.id
+WHERE etd.sis_source_id like '120231'
+  AND cd.code is not NULL
+  AND pd.sis_user_id is not NULL
+  AND ed.workflow_state not like 'deleted'
+  AND ed.workflow_state not like 'completed'
+ORDER BY pd.sis_user_id, cd.sis_source_id
