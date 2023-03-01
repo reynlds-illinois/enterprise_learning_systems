@@ -1,0 +1,10 @@
+-- this query re-creates the Provisioning Report for courses, excluding "deleted" status
+-- unfortunately the Provisioning Report does NOT include live/published courses that
+-- have no teacher in them.
+--
+--SELECT count(*)
+SELECT cd.sis_source_id
+FROM "canvasdata_prod"."course_dim" cd
+    JOIN canvasdata_prod.enrollment_term_dim etd on etd.id = cd.enrollment_term_id
+WHERE etd.sis_source_id like '120231'
+    AND cd.workflow_state NOT LIKE 'deleted'
