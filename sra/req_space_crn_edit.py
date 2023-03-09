@@ -1,7 +1,8 @@
-import cx_Oracle, sys, argparse
+import os, time, cx_Oracle, urllib, sys, json, requests, argparse
 from pprint import pprint
 sys.path.append("/var/lib/canvas-mgmt/bin")
 from canvasFunctions import getEnv
+#from canvasFunctions import crnLookup
 from canvasFunctions import connect2Sql
 from canvasFunctions import logScriptStart
 from columnar import columnar
@@ -14,6 +15,8 @@ crnChange = 'x'
 rosterDSK = 'AD'
 inputCRN = ''
 crnHeader = ['ID', 'Rubric', 'Level', 'Section', 'Term']
+crHost = envDict['class.rosters.host']
+crXapikey = envDict['class.rosters.xapi']
 logScriptStart()
 print('')
 #
@@ -38,7 +41,7 @@ while env != 'p' and env != 's':
         dbSid = envDict['req-stage.db.sid']
         envLabel = "STAGE"
 print('')
-print(f"Connected to:  {dbHost}:{dbPort}")
+print(f"> Connected to:  {dbHost}:{dbPort}")
 print('')
 #
 cursor = connect2Sql(dbUser, dbPass, dbHost, dbPort, dbSid)
@@ -61,7 +64,7 @@ WHERE SRR.SPACE_ID = {spaceID}"""
 cursor.execute(crnInfoQuery)
 crnInfo = cursor.fetchall()
 if len(crnInfo) == 0:
-    print(f"No CRNs are found for space ID {spaceID}.")
+    print(f"> No CRNs are found for space ID {spaceID}.")
     print('')
 else:
     print(f"CRN Info for Space ID: {spaceID}")
@@ -73,10 +76,10 @@ else:
     print('')
 #
 while crnChange != 'a' and crnChange != 'r' and crnChange != 'q':
-    crnChange = input(f"Would you like to (a)dd or (r)emove a CRN from space ID {spaceID}: ").lower()[0]
+    crnChange = input(f"Would you like to (a)dd or (r)emove a CRN from space ID {spaceID} or (q)uit: ").lower()[0]
 print('')
 if crnChange == 'q':
-    print("Exiting without changes...")
+    print("> Exiting without changes...")
     #break
 elif crnChange == 'r':
     remChoice = 'x'
@@ -84,22 +87,22 @@ elif crnChange == 'r':
         inputCRN = input("Enter CRN from the above table: ")
     termID = input("Enter Banner Term ID: ")
     print('')
-    remChoice = input(f"Remove CRN {inputCRN} from space ID {spaceID} for term {termID} (y/n)? ")
+    remChoice = input(f"Remove CRN {inputCRN} from space ID {spaceID} for term {termID} (y/n)? ").lower()[0]
     if remChoice == 'n':
-        print("Exiting without changes...")
+        print("> Exiting without changes...")
         #break
     else:
         print("Removing CRN...")
-        remSql = f"""DELETE FROM correl.t_space_roster tsr
-                     WHERE tsr.roster_data_source_key = {inputCRN}
-                         AND tsr.space_id = {spaceID}
-                         AND tsr.term_code = {termID}"""
-        cursor.execute(remSql)
+        remSqlTSR = f"""DELETE FROM correl.t_space_roster tsr
+                        WHERE tsr.roster_data_source_key = {inputCRN}
+                            AND tsr.space_id = {spaceID}
+                            AND tsr.term_code = {termID}"""
+        cursor.execute(remSqlTSR)
         cursor.execute("COMMIT")
-        print("CRN Removed and Committed...")
+        print("> CRN Removed and Committed...")
         cursor.execute(crnInfoQuery)
         crnInfo = cursor.fetchall()
-        print(f"Updated CRN Info for Space ID: {spaceID}")
+        print(f"> Updated CRN Info for Space ID: {spaceID}")
         crns = []
         for line in crnInfo:
             crns.append([line[1], line[2], line[3], line[4], line[5]])
@@ -109,34 +112,62 @@ elif crnChange == 'r':
 else:
     newCRN = input("Enter the CRN to add to the space: ")
     if newCRN in crnList:
-        print("That CRN is already part of this course space. Exiting...")
+        print("> That CRN is already part of this course space. Exiting...")
         print('')
     else:
         termID = int(input("Enter the Banner Term ID for this CRN: "))
-        print('')
-        addChoice = input(f"Add ID {newCRN} to space ID {spaceID} for term {termID} (y/n)?")
-        if addChoice == 'n':
-            print("Exiting without changes...")
-            #break
+        apiEndpoint = f"v1.0/section-lookup/{termID}/{newCRN}"
+        crnUrl = urllib.parse.urljoin(crHost, apiEndpoint)
+        headers = {"X-API-KEY": crXapikey}
+        r = requests.get(crnUrl, headers=headers)
+        if r.status_code != 200:
+            print('')
+            print(f"> The CRN {newCRN} in Term {termID} is not found in Class Rosters.")
+            print('')
         else:
-            print("Writing changes...")
-            addSql = f"""INSERT into correl.t_space_roster tsr
-                        (tsr.space_id, tsr.roster_data_source_key,
-                        tsr.roster_data_source_id, tsr.term_code)
-                        values({spaceID}, {newCRN}, '{rosterDSK}', {termID})"""
+            r = r.json()
+            crn = r['crn']
+            rubric = r['crs_subj_cd'].upper()
+            level = r['crs_nbr']
+            section = r['sect_nbr'].upper()
+            term = r['term_cd']
+            controllingDept = r['dept_cd']
             print('')
-            print(addSql)
-            print('')
-            cursor.execute(addSql)
-            cursor.execute("COMMIT")
-            print("CRN Successfully added to Space and committed")
-            cursor.execute(crnInfoQuery)
-            crnInfo = cursor.fetchall()
-            print(f"Updated CRN Info for Space ID: {spaceID}")
-            crns = []
-            for line in crnInfo:
-                crns.append([line[1], line[2], line[3], line[4], line[5]])
-            crnTable = columnar(crns, crnHeader, no_borders=True, justify='c', min_column_width=8)
-            print(crnTable)
-            print('')
+            addChoice = input(f"Add CRN {newCRN} to space ID {spaceID} for term {termID} (y/n)? ").lower()[0]
+            if addChoice == 'n':
+                print("> Exiting without changes...")
+                #break
+            else:
+                print("> Writing changes...")
+                # T_SPACE_ROSTER Table
+                addSqlTSR = f"""INSERT into correl.t_space_roster tsr
+                            (tsr.space_id, tsr.roster_data_source_key,
+                             tsr.roster_data_source_id, tsr.term_code)
+                             values({spaceID}, {newCRN}, '{rosterDSK}', {termID})"""
+                cursor.execute(addSqlTSR)
+                cursor.execute("COMMIT")
+                time.sleep(1)
+                # T_AD_ROSTER Table
+                readTARSql = f"""SELECT * FROM correl.t_ad_roster
+                                 WHERE term_code = {termID} and crn = {newCRN}"""
+                cursor.execute(readTARSql)
+                crnCheck = cursor.fetchall()
+                if len(crnCheck) == 0:
+                    addSqlTAR = f"""INSERT INTO correl.t_ad_roster tar
+                                (tar.controlling_dept_key, tar.rubric, tar.course_number,
+                                 tar.section, tar.crn, tar.term_code)
+                                 values('{controllingDept}', '{rubric}', '{level}', '{section}', '{crn}', '{term}')"""
+                    cursor.execute(addSqlTAR)
+                    cursor.execute("COMMIT")
+                print("> CRN Successfully added to Space and committed")
+                cursor.execute(crnInfoQuery)
+                crnInfo = cursor.fetchall()
+                print(f"> Updated CRN Info for Space ID: {spaceID}")
+                crns = []
+                for line in crnInfo:
+                    crns.append([line[1], line[2], line[3], line[4], line[5]])
+                crnTable = columnar(crns, crnHeader, no_borders=True, justify='c', min_column_width=8)
+                print(crnTable)
+                print('')
+cursor.close()
 print('')
