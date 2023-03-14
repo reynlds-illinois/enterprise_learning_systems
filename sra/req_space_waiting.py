@@ -61,10 +61,15 @@ WHERE S.CODE not in (999,60,170,350,360,370,898,899)
 #
 cursor.execute(spacesWaitingSql)
 spacesInfo = cursor.fetchall()
-for row in spacesInfo:
-    allSpaces.append([row[0], row[1], row[6], row[7], row[8], row[9], row[10]])
-spacesTable = columnar(allSpaces, columnHeaders, no_borders=True)
-print('')
-print(spacesTable)
-print('')
+if len(spacesInfo) > 0:
+    for row in spacesInfo:
+        allSpaces.append([row[0], row[1], row[6], row[7], row[8], row[9], row[10]])
+    spacesTable = columnar(allSpaces, columnHeaders, no_borders=True)
+    print('')
+    print(spacesTable)
+    print('')
+else:
+    print('')
+    print(f"No spaces waiting on SRA {envLabel} right now.")
+    print('')
 cursor.close()
