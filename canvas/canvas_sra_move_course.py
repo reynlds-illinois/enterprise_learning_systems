@@ -1,3 +1,4 @@
+#
 #!/usr/bin/python
 #
 import cx_Oracle, sys, argparse, requests, json, csv
@@ -26,7 +27,9 @@ authHeader = {"Authorization": f"Bearer {canvasToken}"}
 deptList = []
 canvasNewDept = ''
 yesNo = ''
-print('')
+print()
+print(">>> NOTE:  this is for REGISTRAR-ENABLED courses only!!!")
+print()
 #
 try:
     cursor = connect2Sql(dbUser, dbPass, dbHost, dbPort, dbSid)
@@ -41,12 +44,11 @@ with open('/var/lib/canvas-mgmt/config/canvas_accounts.csv', 'r') as departments
     deptReader = csv.reader(departments)
     deptList = []
     for line in deptReader:
-        #print(line)
         temp = line[1].split('_',1)[0]
         if temp == 'DEPT':
             deptList.append(line[1])
 #
-spaceID = input("Enter the space ID:  ")
+spaceID = input("Enter the 6-digit space ID:  ")
 #
 spaceQuery = f"""SELECT tsr.TARGET_PRODUCT_KEY || '_' || tsr.SPACE_ID AS COURSE_ID,
                    tt.BANNER_TERM, 'DEPT_' || tbn.SHORT_NAME AS DEPT,
@@ -75,10 +77,14 @@ canvasCourseInfo = requests.get(f"{canvasApi}courses/{canvasCourseID}", headers=
 sourceCanvasAcct = requests.get(f"{canvasApi}accounts/{canvasCourseInfo['account_id']}",headers=authHeader).json()
 #
 while canvasNewDept not in deptList:
-    sraNewDept = input("Enter the new DEPT location for the course: ").upper()
+    print()
+    print("=== Enter the new DEPT location for the course below.")
+    print("=== NOTE:  do NOT use the 'DEPT_' prefix!")
+    print()
+    sraNewDept = input(">>> ").upper()
     canvasNewDept = f"DEPT_{sraNewDept}"
     print()
-
+#
 sraTargetAcctQuery = f"""SELECT *
                          FROM correl.T_BB9_NODE tbn
                          WHERE tbn.SHORT_NAME = '{sraNewDept}'
@@ -88,6 +94,8 @@ sraTargetAcctResult = cursor.fetchall()
 sraTargetAcct = []
 for item in sraTargetAcctResult[0]:
     sraTargetAcct.append(item)
+targetParentNodeID = sraTargetAcct[5]
+#
 if len(sraTargetAcct) == 7:
     targetNodeID = int(sraTargetAcct[0])
     targetCode = sraTargetAcct[1]
@@ -96,17 +104,20 @@ if len(sraTargetAcct) == 7:
     targetCanvasAcct = f"DEPT_{targetShortName}"
     spaceID = int(spaceID)
 #
-print("|=== Current Course Info ===")
+print("|=== Current Course/Account Info ===")
 print("|")
 print(f"| Course ID:    {courseID}")
 print(f"| CourseName:   {canvasCourseInfo['name']}")
 print(f"| Term ID:      {termID}")
 print()
 print("|=== Proposed Changes ===")
+#print(f"| Current Parent Unit:  {sourceSraUnitAcct}")
 print("|")
 print(f"| Moving from Current Dept: {sourceSraDeptAcct} to {targetCanvasAcct}")
 print()
-#
+#print(f"> targetNodeID: {targetNodeID}")
+#print(f"> spaceID:      {spaceID}")
+#print()
 while yesNo != 'y' and yesNo != 'n':
     yesNo = input(">>> Continue (y/n)? ").lower()[0]
     print()
@@ -124,12 +135,15 @@ else:
         print("=== Course successfully moved in Canvas!")
         print()
         #
-        sraCourseUpdateQuery = f"""UPDATE correl.T_BB9_SPACE_NODE tbsn
+        sraCourseUpdate1 = f"""UPDATE correl.T_BB9_SPACE_NODE tbsn
                                    SET tbsn.NODE_ID = {targetNodeID}
                                    WHERE tbsn.SPACE_ID = {spaceID}"""
-        cursor.execute(sraCourseUpdateQuery)
+        sraCourseUpdate2 = f"""UPDATE correl.T_BB9_SPACE_REQUEST tbsr
+                               SET tbsr.PRIMARY_DEPARTMENT_KEY = {targetCode}
+                               WHERE tbsr.SPACE_REQUEST_PTR_ID = {spaceID}"""
+        cursor.execute(sraCourseUpdate1)
+        cursor.execute(sraCourseUpdate2)
         cursor.execute('COMMIT')
-        #oraConn.commit
         print("=== course successfully updated in SRA!")
         print()
         print(">>> All changes successfully made...Exiting...")
