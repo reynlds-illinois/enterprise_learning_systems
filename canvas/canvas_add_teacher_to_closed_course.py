@@ -62,7 +62,7 @@ else:
         print()
         enrollParams = {"enrollment[user_id]":canvasUserID,
                         "enrollment[type]":"TeacherEnrollment",
-                        "enrollment[state]":"active"}
+                        "enrollment[enrollment_state]":"active"}
         # enroll user as teacher in course
         requests.post(enrollURL, headers=authHeader, params=enrollParams)
         print("> Successfully enrolled teacher in course.")
