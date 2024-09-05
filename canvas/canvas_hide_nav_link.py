@@ -3,10 +3,12 @@
 import sys, os, json, requests
 sys.path.append("/var/lib/canvas-mgmt/bin")
 from canvasFunctions import realm
+from canvasFunctions import now
 realm = realm()
 canvasAPI = realm['canvasApi']
 canvasAuth = {"Authorization": f"Bearer {realm['canvasToken']}"}
 canvasEnv = realm['envLabel']
+navigationLabel = ''
 yesNo = ''
 #
 def canvasHideLink(canvasCourseID, canvasLinkID, canvasAPI, canvasAuth):
@@ -16,23 +18,25 @@ def canvasHideLink(canvasCourseID, canvasLinkID, canvasAPI, canvasAuth):
     return r
 #
 print()
-navigationLabel = input("Enter nav label to search for or press <enter> to use the default (Day1Access Course Materials).")
+navigationLabel = input("Enter nav label to search for or press <enter> to use the default (Day1Access Course Materials): ")
+if navigationLabel == '':
+    navigationLabel = 'Day1Access Course Materials'
+#
 print()
-# will add CD2 SQL lookup here at some point...for now it's a manual input
 courseListing = input("Enter your list of Canvas course IDs (one line, space separated):  ")
 courseListing = list(courseListing.split(" "))
-courses = len(courseList)
+courses = len(courseListing)
 #
 while yesNo != 'y' and yesNo != 'n':
     yesNo = input(f"Continue changing the {navigationLabel} for {courses} Canvas courses (y/n)? ").lower()[0]
     print()
-if yesNo = 'y':
+if yesNo == 'y':
     for courseID in courseListing:
         try:
             print(now())
             courseTabs = requests.get(f"{canvasAPI}courses/{courseID}/tabs", headers=canvasAuth).json()
             for item in courseTabs:
-                if item['label'] == 'Day1Access Course Materials':
+                if item['label'] == navigationLabel:
                     canvasLinkID = item['id']
                     courseUpdate = canvasHideLink(courseID, canvasLinkID, canvasAPI, canvasAuth)
             print(f"> Course ID {courseID} with Link ID {canvasLinkID} has been successfully updated.")
