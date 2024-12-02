@@ -48,8 +48,8 @@ for object in objectsList:
 emailFrom = "my_canvas@mydomain.com"
 emailRelay = "my_email_relay@mydomain.com"
 if errors > 0:
-    ms['From'] = emailFrom
     msg = MIMEText("Canvas Objects Download FAILED")
+    msg['From'] = emailFrom
     msg["Subject"] = "Canvas Objects Download FAILED"
     msg['To'] = 'canvas_mgr@mydomain.com'
     emailTo = 'canvas_mgr@mydomain.com'
