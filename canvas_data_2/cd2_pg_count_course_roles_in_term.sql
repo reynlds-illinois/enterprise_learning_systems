@@ -1,5 +1,5 @@
 -- you can change the SIS term ID as needed
--- I disallowed StudentViewEnrollment and any enrollment states that are "active" or "invited"
+-- I disallowed StudentViewEnrollment and any enrollment states that are NOT "active" or "invited"
 --
 SELECT ed.type, count(ed.type) AS TOTAL
 FROM canvas.enrollments ed
