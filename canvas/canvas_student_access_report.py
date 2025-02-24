@@ -15,7 +15,7 @@ from canvasFunctions import canvasGetUserInfo   # convert UIUC NetID to Canvas u
 from canvasFunctions import getDate             # a date specifically formatted for YEAR-MO-DA
 from canvasFunctions import canvasJsonDates
 from canvasFunctions import logScriptStart
-#logScriptStart()
+logScriptStart()
 print('')
 #
 now = int(time.time())
@@ -33,17 +33,23 @@ csvPath = '/var/lib/canvas-mgmt/reports/'
 netID = 'False'
 courseID = 'False'
 yesNo = 'x'
+uploadToBox = 'x'
 #
-tdxTicket = input('Enter the TDX ticket (only numbers): ')
-print()
-requestorNetID = input('Enter the NetID of the TDX requestor: ')
-print()
-requestorEmailAddress = f'{requestorNetID}@illinois.edu'
-tempFolderName = f'tdx_{tdxTicket}'
+while uploadToBox != 'y' and uploadToBox != 'n':
+    uploadToBox = input('>>> Upload and share these results on BOX (y/n)? ').lower().strip()
+    print()
+if uploadToBox == 'y':
+    tdxTicket = input('Enter the TDX ticket (only numbers): ')
+    print()
+    requestorNetID = input('Enter the NetID of the TDX requestor: ')
+    print()
+    requestorEmailAddress = f'{requestorNetID}@illinois.edu'
+    boxParentFolderID = '145486921579'
+    boxRequstorRole = 'Viewer'
+    tempFolderName = f'tdx_{tdxTicket}'
+else: tdxTicket = time.time()
 tempFileName = f'tdx_{tdxTicket}_access_report.csv'
 tempFilePath = f'{csvPath}{tempFileName}'
-boxParentFolderID = '145486921579'
-boxRequstorRole = 'Viewer'
 print()
 #
 while netID == 'False':
@@ -54,6 +60,8 @@ while courseID == 'False':
     courseID = input('Enter the UIUC Course ID of the course: ')
     print()
 canvasCourseID = findCanvasCourse(courseID)
+#
+#
 #
 pvList = []
 partList = []
@@ -89,49 +97,57 @@ for item in accessList:     # Fixup date formatting/TZ
 #
 accessList = sorted(accessList, key=lambda x: x[1], reverse=True)
 accessTable = columnar(accessList, no_borders=True)
-print('====================')
+print('===== STUDENT ACCESS SUMMARY ======')
 print(accessTable)
-print('====================')
+print('===================================')
 print()
 #
-while yesNo != 'y' and yesNo != 'n':
-    yesNo = input('>>> Proceed with upload to BOX (y/n)? ').strip().lower()
+#while yesNo != 'y' and yesNo != 'n':
+#    yesNo = input('>>> Proceed with upload to BOX (y/n)? ').strip().lower()
 #
 print()
-if yesNo == 'y':
-    try:    # write table to local CSV
-        with open(tempFilePath, 'w', newline='') as csvFile:
-            writer = csv.writer(csvFile)
-            writer.writerows(accessList)
-            writer.writerow(['===== USER/COURSE INFO ====='])
-            writer.writerow([f' - Student NetID: {netID}'])
-            writer.writerow([f' - Course ID: {courseID}'])
-        print('= Successfully saved access report to CSV.')
-    except Exception as e:
-        print(f'!!! Error: {e}')
+#if yesNo == 'y':
+try:    # write table to local CSV
+    with open(tempFilePath, 'w', newline='') as csvFile:
+        writer = csv.writer(csvFile)
+        writer.writerows(accessList)
+        writer.writerow(['===== USER/COURSE INFO ====='])
+        writer.writerow([f' - Student NetID: {netID}'])
+        writer.writerow([f' - Course ID: {courseID}'])
+    print(f'= Successfully report to CSV: {tempFilePath}')
+except Exception as e:
+    print(f'!!! Error: {e}')
     print()
     #
-    try:
-        # create target folder in BOX
-        boxCreateTargetFolder = boxClient.folder(boxParentFolderID).create_subfolder(tempFolderName)
-        boxTargetFolderID = int(boxCreateTargetFolder['id'])
-        print('= Successfully created the BOX target folder.')
-        print()
-        # upload local CSV file to new BOX target folder
-        r = boxClient.folder(boxTargetFolderID).upload(tempFilePath, tempFileName)
-        print(r)
-        print('= Successfully uploaded the CSV to BOX.')
-        # share new BOX target folder with TDX requestor
-        x = boxClient.folder(boxTargetFolderID).collaborate_with_login(requestorEmailAddress,CollaborationRole.VIEWER)
-        boxSharedLink = f'https://uofi.box.com/folder/{boxTargetFolderID}'
-        print()
-        print('=====================================')
-        print('==')
-        print(f'== Folder successfully shared in BOX:  {boxSharedLink}')
-        print('==')
-        print('=====================================')
-    except Exception as e:
-        print(f'!!! Error During BOX Actions: {e}')
+try:
+    if uploadToBox == 'y':
+        while yesNo != 'y' and yesNo != 'n':
+            yesNo = input('>>> Proceed with upload to BOX (y/n)? ').strip().lower()
+            print()
+        try:
+            # create target folder in BOX
+            boxCreateTargetFolder = boxClient.folder(boxParentFolderID).create_subfolder(tempFolderName)
+            boxTargetFolderID = int(boxCreateTargetFolder['id'])
+            print('= Successfully created the BOX target folder.')
+            print()
+            # upload local CSV file to new BOX target folder
+            r = boxClient.folder(boxTargetFolderID).upload(tempFilePath, tempFileName)
+            print(r)
+            print('= Successfully uploaded the CSV to BOX.')
+            # share new BOX target folder with TDX requestor
+            x = boxClient.folder(boxTargetFolderID).collaborate_with_login(requestorEmailAddress,CollaborationRole.VIEWER)
+            boxSharedLink = f'https://uofi.box.com/folder/{boxTargetFolderID}'
+            print()
+            print('=====================================')
+            print('==')
+            print(f'== Folder successfully shared in BOX:  {boxSharedLink}')
+            print('==')
+            print('=====================================')
+        except Exception as e:
+            print(f'!!! Error During BOX Actions: {e}')
+except Exception as e:
+    print(f'!!! Error: {e}')
+    print()
 print()
 print(f'>>> Exiting {canvasApi}...')
 print()
