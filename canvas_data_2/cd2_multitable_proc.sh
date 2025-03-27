@@ -69,13 +69,14 @@ today=$(date +%F)
 cd2LogLocation="/var/lib/canvas-mgmt/logs/cd2/"
 now=$today" "$(date +%T)
 #
+# BRING IN DATABASE CONNECTION FROM VAULT
+DB_CONN="$(grep 'cd2.pg.db.dev' < /var/lib/canvas-mgmt/config/environment_dot.conf)"
+DB_CONN="$(cut -d'=' -f2 <<< $DB_CONN)"
+# DB_CONN=DAP_CONNECTION_STRING
+#
 # PROCESS BASED ON ARGUMENTS
 if [ $threads -eq 2 ]; then
     source /var/lib/canvas-mgmt/python312-venv/bin/activate
-    #
-    # BRING IN DATABASE CONNECTION FROM VAULT
-    DB_CONN="$(grep 'cd2.pg.db.dev' < /var/lib/canvas-mgmt/config/environment_dot.conf)"
-    DB_CONN="$(cut -d'=' -f2 <<< $DB_CONN)"
     #
     # CREATE ARRAYS BASED ON TABLE NAMES
     unset TABLES && unset PART0 && unset PART1
@@ -98,10 +99,6 @@ if [ $threads -eq 2 ]; then
     wait
 elif [ $threads -eq 5 ]; then
     source /var/lib/canvas-mgmt/python312-venv/bin/activate
-    #
-    # BRING IN DATABASE CONNECTION FROM VAULT
-    DB_CONN="$(grep 'cd2.pg.db.dev' < /var/lib/canvas-mgmt/config/environment_dot.conf)"
-    DB_CONN="$(cut -d'=' -f2 <<< $DB_CONN)"
     #
     # CREATE ARRAYS BASED ON TABLE NAMES
     unset TABLES && unset PART0 && unset PART1 && unset PART2 && unset PART3 && unset PART4
@@ -136,10 +133,6 @@ elif [ $threads -eq 5 ]; then
     wait
 else
     source /var/lib/canvas-mgmt/python312-venv/bin/activate
-    #
-    # BRING IN DATABASE CONNECTION FROM VAULT
-    DB_CONN="$(grep 'cd2.pg.db.dev' < /var/lib/canvas-mgmt/config/environment_dot.conf)"
-    DB_CONN="$(cut -d'=' -f2 <<< $DB_CONN)"
     #
     # CREATE ARRAYS BASED ON TABLE NAMES
     unset TABLES && unset PART0 && unset PART1 && unset PART2 && unset PART3 && unset PART4 && unset PART5 && unset PART6 && unset PART7 && unset PART8 && unset PART9
