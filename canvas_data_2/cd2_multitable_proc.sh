@@ -19,7 +19,6 @@ else
         threads=$1
 fi
 # PROMPT FOR DAP ACTION IF NOT PROVIDED
-#if [[ $2 -eq "" ]]
 if [[ -z "$2" ]]
 then
         read -p "Enter the DAP action to use (syncdb, initdb, dropdb): " dapAction
@@ -37,7 +36,6 @@ else
         dapAction=$2
 fi
 # PROMPT FOR LOG LEVEL IF NOT PROVIDED
-#if [[ $3 -eq "" ]]
 if [[ -z $3 ]]
 then
         read -p "Enter the logging level to use (info, warning, error or debug): " logLevel
