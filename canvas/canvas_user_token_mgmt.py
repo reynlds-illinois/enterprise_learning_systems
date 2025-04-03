@@ -1,4 +1,3 @@
-
 #!/usr/bin/python
 #
 import sys, csv, os, requests, urllib, getpass, json, time, datetime, smtplib, pytz
@@ -26,27 +25,34 @@ userTokens = []
 loopDelay = 10
 dateOnlyFormat = '%Y-%m-%d'
 today = str(date.today().strftime('%Y-%m-%d'))
-actionChoice = False
+actionChoice = ''
 #
 def canvasTokensReport(canvasApi, canvasObjectsPath, targetFilePath, canvasReportName, authHeader):
     ''' Downloads the all tokens report and returns the full path to the CSV file '''
-    fileLink = ''
+    #fileLink = ''
     reportProgress = 0
     targetFilePath = f'{canvasObjectsPath}{canvasReportName}.csv'
     startReportURL = f'{canvasApi}accounts/1/reports/{canvasReportName}'
     reportID = requests.post(startReportURL, headers=authHeader).json()['id']
     reportURL = f'{canvasApi}accounts/1/reports/{canvasReportName}/{reportID}'
+    maxRetries = 30
+    retries = 0
     while reportProgress < 100:
         response = requests.get(reportURL, headers=authHeader)
         responseJson = json.loads(response.text)
         reportProgress = int(responseJson['progress'])
         print(f'=== Progress: {reportProgress}')
         time.sleep(loopDelay)
-    with open(targetFilePath, "wb") as file:
-        downloadFile = str(responseJson["attachment"]["url"])
-        fileLink = requests.get(downloadFile)
-        file.write(fileLink.content)
-    return targetFilePath
+        retries += 1
+        if retries == maxRetries:
+            print('Report generation timed out.')
+            return False
+    if maxRetries != 30:
+        with open(targetFilePath, "wb") as file:
+            downloadFile = str(responseJson["attachment"]["url"])
+            fileLink = requests.get(downloadFile)
+            file.write(fileLink.content)
+        return targetFilePath
 #
 def canvasListUserTokens(canvasApi, canvasAllTokensReportPath):
     ''' uses the full path of the downloaded all tokens report to genera a list of user-generated tokens '''
@@ -69,52 +75,50 @@ def canvasListUserTokens(canvasApi, canvasAllTokensReportPath):
                 userTokens.append([canvasUserID, canvasUser, tokenHint, expiryDate, lastUsedDate])
     return userTokens
 #
-def canvasCreateUserToken(canvasApi, canvasUserID, reason, expirydate, adminAuth):
+def canvasCreateUserToken(canvasApi, canvasUserID, reason, expiryDate, adminAuth):
     ''' create a user token for someone '''
     createTokenURL = f'{canvasApi}users/{canvasUserID}/tokens'
     params = {'token[purpose]':f'{reason}',
               'token[expires_at]':f'{expiryDate}'}
     try:
         r = requests.post(createTokenURL, params=params, headers=adminAuth)
-        return r['id']
+        return r.json().get('id')
     except Exception as E:
         print(E)
         return False
 #
 def canvasDeleteAllUserTokens(canvasApi, userTokenInfo, adminAuth):
     ''' pass one line at a time from the All User Tokens Report...s/b 5 elements per line '''
+    yesNo = ''
     deletedTokens = []
     canvasUserID = userTokenInfo[0]
     canvasUser = userTokenInfo[1]
     tokenHint = userTokenInfo[2]
     expiryDate = userTokenInfo[3]
     lastUsedDate = userTokenInfo[4]
-    if expiryDate == 'never': continue
-    else:
+    if expiryDate != 'never':
         expiryDate = datetime.datetime.fromisoformat(userTokenInfo[3])
         expiryDate = datetime.datetime.strftime(expiryDate, dateOnlyFormat)
-    if lastUsedDate == 'never': continue
-    else:
+    if lastUsedDate != 'never':
         lastUsedDate = datetime.datetime.fromisoformat(userTokenInfo[4])
         lastUsedDate = datetime.datetime.strftime(lastUsedDate, dateOnlyFormat)
     while yesNo != 'y' and yesNo != 'n':
         yesNo = input('Continue deletion on this record (y/n)? ').lower().strip()[0]
         print()
-    if yesNo == 'n': continue
-    else:
-        try:
-            deleteURL = f'{canvasApi}users/{canvasUserID}/tokens/{tokenHint}'
-            requests.delete(deleteURL, headers=adminAuth)
-            deletedTokens.append([canvasUserID, canvasUser, tokenHint, expiryDate, lastUsedDate])
-            print('Token successfully deleted')
-            return True
-        except Exception as E:
-            print(E)
-            return False
+        if yesNo != 'n':
+            try:
+                deleteURL = f'{canvasApi}users/{canvasUserID}/tokens/{tokenHint}'
+                requests.delete(deleteURL, headers=adminAuth)
+                deletedTokens.append([canvasUserID, canvasUser, tokenHint, expiryDate, lastUsedDate])
+                print('Token successfully deleted')
+                #return True
+            except Exception as E:
+                print(E)
+                #return False
     print('==========')
 #
 while actionChoice != 'l' and actionChoice != 'n' and actionChoice != 'd':
-    actionChoice = input('Choose an action: (l)ist user tokens, (n)ew user token, (d)elete all user tokens: ')
+    actionChoice = input('Choose an action: (l)ist user tokens, (n)ew user token, (d)elete all user tokens: ').lower().strip()[0]
     print()
 if actionChoice == 'l':
     canvasAllTokensReportPath = canvasTokensReport(canvasApi, canvasObjectsPath, targetFilePath, canvasReportName, authHeader)
