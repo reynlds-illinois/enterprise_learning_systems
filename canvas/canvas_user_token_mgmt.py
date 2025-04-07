@@ -15,10 +15,8 @@ realm = realm()
 canvasToken = realm['canvasToken']
 canvasApi = realm['canvasApi']
 canvasToken = realm['canvasToken']
-canvasReportName = "user_access_tokens_csv"
+canvasUserTokens = realm['canvas.user.tokens']
 authHeader = {"Authorization": f"Bearer {canvasToken}"}
-canvasObjectsPath = "/var/lib/canvas-mgmt/config/"
-targetFilePath = f'{canvasObjectsPath}{canvasReportName}.csv'
 serviceAccts = ['84','94','109','8994','125511','129156','132703','319151','319349','336978','355105','377818','378454','381230','400969','417093','420084','426543']
 columnHeader = ['canvas_id', 'canvas_user', 'hint', 'expires', 'last_used']
 userTokens = []
@@ -27,37 +25,10 @@ dateOnlyFormat = '%Y-%m-%d'
 today = str(date.today().strftime('%Y-%m-%d'))
 actionChoice = ''
 #
-def canvasTokensReport(canvasApi, canvasObjectsPath, targetFilePath, canvasReportName, authHeader):
-    ''' Downloads the all tokens report and returns the full path to the CSV file '''
-    #fileLink = ''
-    reportProgress = 0
-    targetFilePath = f'{canvasObjectsPath}{canvasReportName}.csv'
-    startReportURL = f'{canvasApi}accounts/1/reports/{canvasReportName}'
-    reportID = requests.post(startReportURL, headers=authHeader).json()['id']
-    reportURL = f'{canvasApi}accounts/1/reports/{canvasReportName}/{reportID}'
-    maxRetries = 30
-    retries = 0
-    while reportProgress < 100:
-        response = requests.get(reportURL, headers=authHeader)
-        responseJson = json.loads(response.text)
-        reportProgress = int(responseJson['progress'])
-        print(f'=== Progress: {reportProgress}')
-        time.sleep(loopDelay)
-        retries += 1
-        if retries == maxRetries:
-            print('Report generation timed out.')
-            return False
-    if maxRetries != 30:
-        with open(targetFilePath, "wb") as file:
-            downloadFile = str(responseJson["attachment"]["url"])
-            fileLink = requests.get(downloadFile)
-            file.write(fileLink.content)
-        return targetFilePath
-#
-def canvasListUserTokens(canvasApi, canvasAllTokensReportPath):
+def canvasListUserTokens(canvasApi, canvasUserTokens):
     ''' uses the full path of the downloaded all tokens report to genera a list of user-generated tokens '''
     userTokens = []
-    with open(canvasAllTokensReportPath, 'r') as file:
+    with open(canvasUserTokens, 'r') as file:
         allTokens = csv.reader(file)
         for line in allTokens:
             if line[5] == '170000000000016' and line[0] not in serviceAccts:
@@ -121,8 +92,8 @@ while actionChoice != 'l' and actionChoice != 'n' and actionChoice != 'd':
     actionChoice = input('Choose an action: (l)ist user tokens, (n)ew user token, (d)elete all user tokens: ').lower().strip()[0]
     print()
 if actionChoice == 'l':
-    canvasAllTokensReportPath = canvasTokensReport(canvasApi, canvasObjectsPath, targetFilePath, canvasReportName, authHeader)
-    allUserTokens = canvasListUserTokens(canvasApi, canvasAllTokensReportPath)
+    #canvasAllTokensReportPath = canvasTokensReport(canvasApi, canvasObjectsPath, targetFilePath, canvasReportName, authHeader)
+    allUserTokens = canvasListUserTokens(canvasApi, canvasUserTokens)
     print(columnar(allUserTokens, columnHeader, no_borders=True))
     print()
 elif actionChoice == 'n':
@@ -134,7 +105,7 @@ elif actionChoice == 'n':
 else:
     adminToken = getpass.getpass('Enter your SU admin token: ')
     adminAuth = {"Authorization": f"Bearer {adminToken}"}
-    canvasAllTokensReportPath = canvasTokensReport(canvasApi, canvasObjectsPath, targetFilePath, canvasReportName, authHeader)
-    userTokens = canvasListUserTokens(canvasApi, canvasAllTokensReportPath)
+    #canvasAllTokensReportPath = canvasTokensReport(canvasApi, canvasObjectsPath, targetFilePath, canvasReportName, authHeader)
+    userTokens = canvasListUserTokens(canvasApi, canvasUserTokens)
     for userTokenInfo in userTokens:
         canvasDeleteAllUserTokens(canvasApi, userTokenInfo, adminAuth)
