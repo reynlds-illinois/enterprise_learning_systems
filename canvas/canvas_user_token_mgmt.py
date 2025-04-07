@@ -9,13 +9,15 @@ sys.path.append("/var/lib/canvas-mgmt/bin")
 from canvasFunctions import realm
 from canvasFunctions import canvasGetUserInfo
 from canvasFunctions import getDate
+from canvasFunctions import getEnv
 from columnar import columnar
 #logScriptStart()
+env = getEnv()
 realm = realm()
 canvasToken = realm['canvasToken']
 canvasApi = realm['canvasApi']
 canvasToken = realm['canvasToken']
-canvasUserTokens = realm['canvas.user.tokens']
+canvasUserTokens = env['canvas.user.tokens']
 authHeader = {"Authorization": f"Bearer {canvasToken}"}
 serviceAccts = ['84','94','109','8994','125511','129156','132703','319151','319349','336978','355105','377818','378454','381230','400969','417093','420084','426543']
 columnHeader = ['canvas_id', 'canvas_user', 'hint', 'expires', 'last_used']
