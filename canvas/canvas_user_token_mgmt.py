@@ -12,7 +12,7 @@ from canvasFunctions import getDate
 from canvasFunctions import getEnv
 from columnar import columnar
 #logScriptStart()
-env = getEnv()
+#env = getEnv()
 realm = realm()
 canvasToken = realm['canvasToken']
 canvasApi = realm['canvasApi']
@@ -99,15 +99,44 @@ if actionChoice == 'l':
     print(columnar(allUserTokens, columnHeader, no_borders=True))
     print()
 elif actionChoice == 'n':
+    yesNo = ''
     netID = input('Enter the NetID of the user that will receive the token:  ')
     print()
-    adminToken = getpass.getpass('Enter your SU admin token: ')
+    #adminToken = getpass.getpass('Enter your SU admin token: ')
+    adminToken = canvasToken
     adminAuth = {"Authorization": f"Bearer {adminToken}"}
-    canvasUserID = canvasGetUserInfo(netID)[0]
+    canvasUserInfo = canvasGetUserInfo(netID)
+    canvasUserID = canvasUserInfo[0]
+    displayName = canvasUserInfo[3]
+    print()
+    reason = input('Enter a short reason for this request: ')
+    print()
+    expiryDate = getDate()
+    print()
+    while yesNo != 'y' and yesNo != 'n':
+        print('  ===== Summary of Changes =====')
+        print(f'  = NetID:       {netID}')
+        print(f'  = Reason:      {reason}')
+        print(f'  = Expiry Date: {expiryDate}')
+        print('  ==============================')
+        print()
+        yesNo = input('>>> Continue (y/n)? ').lower().split()[0]
+        print()
+    if yesNo == 'y':
+        try:
+            r = canvasCreateUserToken(canvasApi, canvasUserID, reason, expiryDate, adminAuth)
+            print('Successfully created token.')
+            print()
+        except Exception as E:
+            print('Token NOT successfully created.')
+            print(E)
+            print()
 else:
-    adminToken = getpass.getpass('Enter your SU admin token: ')
+    #adminToken = getpass.getpass('Enter your SU admin token: ')
+    adminToken = canvasToken
     adminAuth = {"Authorization": f"Bearer {adminToken}"}
     #canvasAllTokensReportPath = canvasTokensReport(canvasApi, canvasObjectsPath, targetFilePath, canvasReportName, authHeader)
     userTokens = canvasListUserTokens(canvasApi, canvasUserTokens)
     for userTokenInfo in userTokens:
         canvasDeleteAllUserTokens(canvasApi, userTokenInfo, adminAuth)
+print()
