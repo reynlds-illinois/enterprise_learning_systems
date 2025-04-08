@@ -1,6 +1,6 @@
 #!/usr/bin/python
 #
-import sys, requests, json
+import sys, requests, getpass, json, csv
 #from columnar import columnar
 from pprint import pprint
 sys.path.append("/var/lib/canvas-mgmt/bin")
@@ -14,16 +14,21 @@ canvasApi = realm["canvasApi"]
 #canvasToken = realm["canvasToken"]
 adminToken = getpass.getpass('Enter your SU token: ')
 authHeader = {"Authorization": f"Bearer {adminToken}"}
-netID = input('Please enter the NetID: ')
-canvasUserID = canvasGetUserInfo(netID)[0]
+#netID = input('Please enter the NetID: ')
+#groupID = input('Please enter the target group ID from the course: ')
 print()
-groupID = input('Please enter the target group ID from the course: ')
+sourceFile = input('Please enter the full file path to the CSV source file: ')
 print()
-try:
-    params = {'user_id':canvasUserID}
-    r = requests.post(f"{canvasApi}groups/{groupID}/memberships", headers=authHeader, params=params)
-    print(f"{r.reason} - User {netID} - {canvasUserID} has been added to group {groupID}.")
-    print()
-except Exception as E:
-    print(E)
-    print()
+with open(sourceFile, 'r') as csvFile:
+    reader = csv.reader(csvFile, delimiter=',')
+    for row in reader:
+        netID = row[0]
+        groupID = row[1]
+        canvasUserID = canvasGetUserInfo(netID)[0]
+        params = {'user_id':canvasUserID}
+        r = requests.post(f"{canvasApi}groups/{groupID}/memberships", headers=authHeader, params=params)
+        pprint(r)
+        print('----------')
+        print()
+        input('Press <ENTER> to continue...')
+        print()
