@@ -1,37 +1,39 @@
-import cx_Oracle, sys, argparse
+from sqlalchemy import create_engine, text
+from sqlalchemy.orm import sessionmaker
+import sys, argparse
 from pprint import pprint
 sys.path.append("/var/lib/canvas-mgmt/bin")
 from canvasFunctions import realm
-from canvasFunctions import connect2Sql
 from canvasFunctions import logScriptStart
-#
+
+# Initialize realm and environment
 realm = realm()
 env = ''
 logScriptStart()
 print('')
-#
-#parser = argparse.ArgumentParser(add_help=True)
-#parser.add_argument('-s', dest='SPACEID', action='store', help='The globally-unique 6-digit space ID', type=str)
-#args = parser.parse_args()
-#
-answer = 'x'
+
+# Database connection details
 dbUser = realm['sraDbUser']
 dbPass = realm['sraDbPass']
 dbHost = realm['sraDbHost']
 dbPort = 1521
 dbSid = realm['sraDbSid']
 envLabel = realm['envLabel']
+
+# Create SQLAlchemy engine
+db_url = f"oracle+oracledb://{dbUser}:{dbPass}@{dbHost}:{dbPort}/{dbSid}"
+engine = create_engine(db_url)
+Session = sessionmaker(bind=engine)
+session = Session()
+
 print('')
 print(f"Connected to:  {dbHost}:{dbPort}")
 print('')
-#
-cursor = connect2Sql(dbUser, dbPass, dbHost, dbPort, dbSid)
-#
+
 while True:
-    #
     spaceID = int(input('Please enter the space ID:  '))
-    #spaceID = int(args.SPACEID)
-    #
+
+    # Query for space information
     spaceQuery = f"""SELECT SR.SPACE_ID SPACE_ID,
       /* non-xml elements */
       SR.TYPE_ID TYPE_ID,
@@ -111,10 +113,10 @@ while True:
       LEFT JOIN CORREL.t_term_schedule tsch_ce on ( tsch_ce.term_id = sr.term_id and  tsch_ce.event_id = 444 )
     WHERE SR.PRODUCT_ID = 'BB9'
       AND SR.SPACE_ID in ({spaceID})"""
-    #
-    cursor.execute(spaceQuery)
-    spaceInfo = cursor.fetchall()
-    #
+
+    spaceInfo = session.execute(text(spaceQuery)).fetchall()
+
+    # Query for CRN information
     crnQuery = f"""SELECT SRR.ROSTER_DATA_SOURCE_KEY CRN,
            SRR.ROSTER_DATA_SOURCE_KEY CRN,
            ADR.RUBRIC,
@@ -124,10 +126,10 @@ while True:
     FROM CORREL.T_SPACE_ROSTER SRR
       LEFT JOIN CORREL.T_AD_ROSTER ADR on(SRR.ROSTER_DATA_SOURCE_KEY = ADR.CRN and SRR.TERM_CODE = ADR.TERM_CODE)
     WHERE SRR.SPACE_ID = {spaceID}"""
-    #
-    cursor.execute(crnQuery)
-    crnInfo = cursor.fetchall()
-    #
+
+    crnInfo = session.execute(text(crnQuery)).fetchall()
+
+    # Query for space history
     historyQuery = f"""select h."ID" HIST_ROW,
             to_char ( h."DATE", 'YYYY/MM/DD HH24:MI:SS' ) "DATE",
             u.login NETID,
@@ -140,11 +142,10 @@ while True:
             join CORREL.t_user u on(u.user_id = h.user_id)
     where h.space_id = {spaceID}
             and h.event_id not in ( 483,461,503,461,485,462,581,582 )"""
-    #
-    cursor.execute(historyQuery)
-    spaceHistory = cursor.fetchall()
-    spaceHistory.sort(reverse=True)
-    #
+
+    spaceHistory = session.execute(text(historyQuery)).fetchall()
+    spaceHistory = sorted(spaceHistory, reverse=True)
+
     print('')
     print('|=============================== INFO ===============================')
     print('| SPACE_ID      =', spaceInfo[0][0])
@@ -177,16 +178,10 @@ while True:
         print(f"| {line[1]} | {line[2]} | {line[3]} | {line[5]}({line[4]})")
     print('|====================================================================')
     print()
-    while answer != 'y' and answer != 'n':
-        answer = input("Continue with another space (y/n)? ").strip().lower()
-    if answer == 'y':
-        print()
-        answer = 'x'
-        continue
-    else:
-        print()
+    answer = input("Continue with another space (y/n)? ").strip().lower()
+    if answer != 'y':
         break
-#
+
 print("Closing connection and exiting...")
-cursor.close()
+session.close()
 print('')
