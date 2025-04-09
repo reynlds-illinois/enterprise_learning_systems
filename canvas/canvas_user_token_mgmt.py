@@ -60,10 +60,10 @@ def canvasCreateUserToken(canvasApi, canvasUserID, reason, expiryDate, adminAuth
         print(E)
         return False
 #
-def canvasDeleteAllUserTokens(canvasApi, userTokenInfo, adminAuth):
+def canvasDeleteAllUserTokens(canvasApi, userTokenInfo, authHeader):
     ''' pass one line at a time from the All User Tokens Report...s/b 5 elements per line '''
-    yesNo = ''
-    deletedTokens = []
+    #yesNoT = ''
+    #deletedTokens = []
     canvasUserID = userTokenInfo[0]
     canvasUser = userTokenInfo[1]
     tokenHint = userTokenInfo[2]
@@ -75,19 +75,21 @@ def canvasDeleteAllUserTokens(canvasApi, userTokenInfo, adminAuth):
     if lastUsedDate != 'never':
         lastUsedDate = datetime.datetime.fromisoformat(userTokenInfo[4])
         lastUsedDate = datetime.datetime.strftime(lastUsedDate, dateOnlyFormat)
-    while yesNo != 'y' and yesNo != 'n':
-        yesNo = input('Continue deletion on this record (y/n)? ').lower().strip()
+    #while yesNoT != 'y' and yesNoT != 'n':
+    #    pprint(userTokenInfo)
+    #    print()
+    #    yesNoT = input('Continue deletion on this record (y/n)? ').lower().strip()
         print()
-        if yesNo != 'n':
-            try:
-                deleteURL = f'{canvasApi}users/{canvasUserID}/tokens/{tokenHint}'
-                requests.delete(deleteURL, headers=adminAuth)
-                deletedTokens.append([canvasUserID, canvasUser, tokenHint, expiryDate, lastUsedDate])
-                print('Token successfully deleted')
-                #return True
-            except Exception as E:
-                print(E)
-                #return False
+    #    if yesNoT != 'n':
+    try:
+        deleteURL = f'{canvasApi}users/{canvasUserID}/tokens/{tokenHint}'
+        requests.delete(deleteURL, headers=authHeader)
+        #deletedTokens.append([canvasUserID, canvasUser, tokenHint, expiryDate, lastUsedDate])
+        print(f'{canvasUser} - Token successfully deleted')
+        #return True
+    except Exception as E:
+        print(f'{canvasUser} - ERROR = {E}')
+        #return False
     print('==========')
 #
 def canvasDeleteUserToken(canvasApi, userTokenInfo, authHeader):
@@ -151,18 +153,31 @@ elif actionChoice == 'n':
             print(E)
             print()
 elif actionChoice == 'DE':
-    yesNo = ''
+    yesNo1 = ''
+    yesNo2 = ''
     #adminToken = getpass.getpass('Enter your SU admin token: ')
     #adminToken = canvasToken
     #adminAuth = {"Authorization": f"Bearer {adminToken}"}
     #canvasAllTokensReportPath = canvasTokensReport(canvasApi, canvasObjectsPath, targetFilePath, canvasReportName, authHeader)
     userTokens = canvasListUserTokens(canvasApi, canvasUserTokens)
-    while yesNo != 'y' and yesNo != 'n':
-        yesNo = input('Continue deletion on ALL user-generated tokens (y/n)? ').lower().strip()
+    while yesNo1 != 'y' and yesNo1 != 'n':
+        yesNo1 = input('Continue deletion on ALL user-generated tokens (y/n)? ').lower().strip()
         print()
-    if yesNo == 'y':
+    while yesNo2 != 'y' and yesNo2 != 'n':
+        yesNo2 = input('>>> Are you REALLY sure about this? ').lower().strip()
+        print()
+    if yesNo1 == 'y' and yesNo2 == 'y':
+        print('Deleting ALL user-generated tokens...')
+        print()
         for userTokenInfo in userTokens:
-            canvasDeleteAllUserTokens(canvasApi, userTokenInfo, authHeader)
+            try:
+                canvasDeleteAllUserTokens(canvasApi, userTokenInfo, authHeader)
+                pprint(userTokenInfo)
+                print()
+            except Exception as E:
+                print(E)
+                print()
+            time.sleep(1)
 else:
     tokenChoice = ''
     userTokens = canvasListUserTokens(canvasApi, canvasUserTokens)
