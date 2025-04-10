@@ -1,11 +1,12 @@
 #
 #!/usr/bin/python
 #
-import cx_Oracle, sys, argparse, requests, json, csv
+import sys, argparse, requests, json, csv
+from sqlalchemy import create_engine, text
+from sqlalchemy.orm import sessionmaker
 from pprint import pprint
 sys.path.append("/var/lib/canvas-mgmt/bin")
 from canvasFunctions import realm
-from canvasFunctions import connect2Sql
 from canvasFunctions import logScriptStart
 from canvasFunctions import canvasGetAccountID
 from canvasFunctions import findCanvasCourse
@@ -32,7 +33,11 @@ print(">>> NOTE:  this is for REGISTRAR-ENABLED courses only!!!")
 print()
 #
 try:
-    cursor = connect2Sql(dbUser, dbPass, dbHost, dbPort, dbSid)
+    # Create SQLAlchemy engine and session
+    db_url = f"oracle+oracledb://{dbUser}:{dbPass}@{dbHost}:{dbPort}/{dbSid}"
+    engine = create_engine(db_url)
+    Session = sessionmaker(bind=engine)
+    session = Session()
     print(f"Connected to:  {dbHost}:{dbPort}")
     print(f"               {canvasApi}")
     print('')
@@ -60,8 +65,7 @@ spaceQuery = f"""SELECT tsr.TARGET_PRODUCT_KEY || '_' || tsr.SPACE_ID AS COURSE_
                  WHERE tsr.SPACE_ID = '{spaceID}'"""
 #
 spaceInfo = []
-cursor.execute(spaceQuery)
-queryResult = cursor.fetchall()
+queryResult = session.execute(text(spaceQuery)).fetchall()
 for item in queryResult[0]:
     spaceInfo.append(item)
 #
@@ -89,8 +93,7 @@ sraTargetAcctQuery = f"""SELECT *
                          FROM correl.T_BB9_NODE tbn
                          WHERE tbn.SHORT_NAME = '{sraNewDept}'
                            AND tbn.PARENT_NODE_ID IS NOT NULL"""
-cursor.execute(sraTargetAcctQuery)
-sraTargetAcctResult = cursor.fetchall()
+sraTargetAcctResult = session.execute(text(sraTargetAcctQuery)).fetchall()
 sraTargetAcct = []
 for item in sraTargetAcctResult[0]:
     sraTargetAcct.append(item)
@@ -141,9 +144,9 @@ else:
         sraCourseUpdate2 = f"""UPDATE correl.T_BB9_SPACE_REQUEST tbsr
                                SET tbsr.PRIMARY_DEPARTMENT_KEY = {targetCode}
                                WHERE tbsr.SPACE_REQUEST_PTR_ID = {spaceID}"""
-        cursor.execute(sraCourseUpdate1)
-        cursor.execute(sraCourseUpdate2)
-        cursor.execute('COMMIT')
+        session.execute(text(sraCourseUpdate1))
+        session.execute(text(sraCourseUpdate2))
+        session.commit()
         print("=== course successfully updated in SRA!")
         print()
         print(">>> All changes successfully made...Exiting...")
