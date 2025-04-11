@@ -23,20 +23,28 @@ do
        (c) Canvas: Get Course Info (PROD)
        (d) Canvas: Get User Info (PROD-live)
        (e) Canvas: Audit Course Events
+       (%) Canvas: Get All Student Completion Status in Course
+       (=) Canvas: Move course dept/acct in Canvas and SRA
+       (?) Canvas: Student Access Report (optional upload to BOX)
        (f) Class Rosters: Get Course Memberships (PROD)
 
     Canvas Course/User/Roster Management:
        (g) Canvas: Enrollment Info and Status Change (PROD/STAGE-Live)
-       (h) Canvas: Enroll User In Course (PROD/STAGE-Live)
+       (h) Canvas: Enroll User In non-Closed Course (PROD/STAGE-Live)
        (i) Canvas: Observer Manager (PROD/STAGE-Live)
+       ($) Canvas: Extend Course For a Single Student
+       (@) Canvas: Move Registrar-enabled Course (also affects SRA placement)
+       (#) Canvas: Add Enrollment to Closed Course
+       (Z) Canvas: Export Course as Zip, Qti or CC
 
     Canvas Data 2:
        (j) CD2: Postgres Query
 
-    Active Directory:
+    Active Directory - Class Rosters:
        (k) AD: User Info (PROD)
        (l) AD: Roster List by CRN or Space ID (PROD/STAGE)
        (m) AD: CRN Info (PROD)
+       (M) CR: CRN and Space Members (with SIS course ID)
 
     Space Request Application:
        (n) SRA: User Manager (PROD/STAGE)
@@ -49,7 +57,7 @@ do
 
     Systems and Maintenance:
        (v) Canvas SIS ID Details            (y) Edit Crontab (PROD)
-       (w) Canvas SIS Uploads Info          (z) Python 3.9 Virtual Env (PROD)
+       (w) Canvas SIS Uploads Info          (z) Python 3.12 Virtual Env (PROD)
        (x) Update Canvas Objects (PROD)     (+) Generate a Complex Password
 
     (Q/q)uit
@@ -74,6 +82,15 @@ EOF
     "e") ~/bin/canvas_audit_course.sh
          pressKey ;;
 
+    "%") ~/bin/canvas_get_bulk_user_progress_in_course.sh
+         pressKey ;;
+
+    "=") ~/bin/canvas_sra_move_course.sh
+         pressKey ;;
+
+    "?") ~/bin/canvas_student_access_report.sh
+         pressKey ;;
+
     "f") ~/bin/cr_member_info.sh
          pressKey ;;
 
@@ -86,6 +103,18 @@ EOF
     "i") ~/bin/canvas_observer_mgr.sh
          pressKey ;;
 
+    "$") ~/bin/canvas_extend_course_for_single_student.sh
+         pressKey ;;
+
+    "@") ~/bin/canvas_sra_move_course.sh
+         presskey ;;
+
+    "#") ~/bin/canvas_add_enrollment_to_closed_course.sh
+         presskey ;;
+
+    "Z") ~/bin/canvas_export_course.sh
+         presskey ;;
+
     "j") ~/bin/cd2_query_db.sh
          pressKey ;;
 
@@ -96,6 +125,9 @@ EOF
          pressKey ;;
 
     "m") ~/bin/ad_crn_info.sh
+         pressKey ;;
+
+    "M") ~/bin/cr_crn_and_space_members.sh
          pressKey ;;
 
     "n") ~/bin/req_user_mgr.sh
@@ -132,19 +164,21 @@ EOF
          eval crontab -e
          pressKey ;;
 
-    "z") echo "Starting Python Virtual Development environment..."
+    "z") echo "Starting Python 3.12 Virtual Development environment..."
          echo ""
-         eval source ~/python39-venv/bin/activate
+         eval source ~/python312-venv/bin/activate
          python
          pressKey ;;
 
     "+") ~/bin/generate_password.sh
          pressKey ;;
 
+#    "w") PLACEHOLDER
+
     "Q") exit ;;
     "q") exit ;;
      * ) echo "Invalid option..."
          echo "" ;;
     esac
-
+#    sleep 1
 done
