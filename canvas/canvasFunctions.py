@@ -125,26 +125,26 @@ def canvasJsonDates(jsonObj):
     '''Convert Canvas UTC timestamps to US Central time.'''
     from datetime import datetime
     import pytz
-
+    #
     def convert_to_central(value):
         try:
             UTCvalue = datetime.strptime(value, '%Y-%m-%dT%H:%M:%SZ').replace(tzinfo=pytz.UTC)
             return UTCvalue.astimezone(pytz.timezone('US/Central')).strftime('%Y-%m-%d %H:%M:%S')
         except ValueError:
             return value
-
+    #
     if isinstance(jsonObj, dict):
         for key, value in jsonObj.items():
             if isinstance(value, (dict, list)):
-                canvasJsonDates(value)
+                canvasJsonDates(value)  # Recursive call for nested structures
             elif isinstance(value, str):
                 jsonObj[key] = convert_to_central(value)
     elif isinstance(jsonObj, list):
-        for i, item in enumerate(jsonObj):
-            if isinstance(item, (dict, list)):
-                canvasJsonDates(item)
-            elif isinstance(item, str):
-                jsonObj[i] = convert_to_central(item)
+        for i in range(len(jsonObj)):
+            if isinstance(jsonObj[i], (dict, list)):
+                canvasJsonDates(jsonObj[i])  # Recursive call for nested structures
+            elif isinstance(jsonObj[i], str):
+                jsonObj[i] = convert_to_central(jsonObj[i])
     return jsonObj
 
 
