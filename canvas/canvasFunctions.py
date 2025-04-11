@@ -4,11 +4,16 @@
 
 def paginateCanvasApi(url, headers, params):
     '''Generator function to handle paginated Canvas API responses.'''
+    import requests
     while url:
-        response = requests.get(url, headers=headers, params=params)
-        response.raise_for_status()                      # Ensure HTTP errors are raised
-        yield from response.json()                       # Yield each item in the current page
-        url = response.links.get('next', {}).get('url')  # Get the next page URL
+        try:
+            response = requests.get(url, headers=headers, params=params)
+            response.raise_for_status()  # Ensure HTTP errors are raised
+            yield from response.json()  # Yield each item in the current page
+            url = response.links.get('next', {}).get('url')  # Get the next page URL
+        except (requests.exceptions.RequestException, KeyError) as e:
+            print(f"Error during pagination: {e}")
+            break
 
 
 #---------------------------------------------------------
@@ -16,17 +21,19 @@ def paginateCanvasApi(url, headers, params):
 #---------------------------------------------------------
 
 def canvasGetAccountName(canvasAccountID):
-    import csv, os, sys
+    '''Look up UIUC sub-account name from Canvas account ID.'''
+    import csv
     with open('/var/lib/canvas-mgmt/config/canvas_accounts.csv', 'r') as csvFile:
         reader = csv.reader(csvFile)
         for row in reader:
             if row[0] == canvasAccountID:
-                break
-        return row
+                return row
+    return None  # Return None if account ID is not found
 
 
 def canvasGetUserEnrollments(canvasUserID, canvasBannerTerm='x'):
-    '''Return enrollments for a selected user in Canvas'''
+    '''Return enrollments for a selected user in Canvas.'''
+    import requests
     from columnar import columnar
     status = 'x'
     searchResults = []
@@ -37,24 +44,22 @@ def canvasGetUserEnrollments(canvasUserID, canvasBannerTerm='x'):
         enrollmentsUrl = f"{canvasApi}users/{canvasUserID}/enrollments?enrollment_term_id=sis_term_id%3A{canvasBannerTerm}"
         tempTermID = canvasBannerTerm
     print('')
-    while status != 'a' and status != 'i' and status != 'd' and status != 'c' and status != 'v' and status != '':
-        status = input("Enrollment status:  (a)ctive, (c)ompleted, (d)eleted, (i)nactive, in(v)ited, <enter> for all: ")
-        print('')
-    if status == "a": status = ["active"]
-    elif status == "c": status = ["completed"]
-    elif status == "d": status = ["deleted"]
-    elif status == "i": status = ["inactive"]
-    elif status == "v": status = ["invited"]
-    else: status = ["active", "inactive", "deleted", "completed", "invited"]
+    status = input("Enrollment status: (a)ctive, (c)ompleted, (d)eleted, (i)nactive, in(v)ited, <enter> for all: ").lower()
+    status_map = {
+        "a": ["active"], "c": ["completed"], "d": ["deleted"],
+        "i": ["inactive"], "v": ["invited"], "": ["active", "inactive", "deleted", "completed", "invited"]
+    }
+    status = status_map.get(status, ["active", "inactive", "deleted", "completed", "invited"])
     print('')
     for item in status:
-        params = {"per_page": 100, "state":f"{item}"}
+        params = {"per_page": 100, "state": item}
         response = requests.get(enrollmentsUrl, headers=authHeader, params=params)
-        if len(response.json()) > 0:
+        response.raise_for_status()
+        searchResults.extend(response.json())
+        while 'next' in response.links:
+            response = requests.get(response.links['next']['url'], headers=authHeader, params=params)
+            response.raise_for_status()
             searchResults.extend(response.json())
-            while 'next' in response.links:
-                response = requests.get(response.links['next']['url'], headers=authHeader, params=params)
-                searchResults.extend(response.json())
     if len(searchResults) > 0:
         searchResults = canvasJsonDates(searchResults)
         tableTemp = []
@@ -65,8 +70,6 @@ def canvasGetUserEnrollments(canvasUserID, canvasBannerTerm='x'):
                 tableTemp.append([row['course_id'], str(row['id']), row['sis_user_id'], row['sis_course_id'], row["sis_section_id"], int(row["course_section_id"]), row['role'], row['enrollment_state']])
                 canvasEnrollIDs.append(str(row['id']))
             else: continue
-            #tableTemp.append([row['course_id'], str(row['id']), row['sis_user_id'], row['sis_course_id'], row["sis_section_id"], int(row["course_section_id"]), row['role'], row['enrollment_state']])
-            #canvasEnrollIDs.append(str(row['id']))
         table = columnar(tableTemp, columnHeaders, no_borders=True)
         return table
     else:
@@ -81,10 +84,6 @@ def canvasCourseInfo(canvasCourseID, canvasAPI, canvasAuth):
     url = f"{canvasAPI}accounts/1/courses/{canvasCourseID}"
     canvasCourseInfoResponse = requests.get(url, headers=canvasAuth)
     canvasCourseInfoSearchResults = canvasCourseInfoResponse.json()
-    #print('==========')
-    #print(f"length: {len(canvasCourseInfoSearchResults)}")
-    #pprint(canvasCourseInfoSearchResults)
-    #print('==========')
     if len(canvasCourseInfoSearchResults) < 1:
         print()
         print(f"Course Not Found: {canvasCourseID}")
@@ -123,63 +122,29 @@ def convertDate(utcTempValue):
 
 
 def canvasJsonDates(jsonObj):
-    import pytz
+    '''Convert Canvas UTC timestamps to US Central time.'''
     from datetime import datetime
+    import pytz
+
+    def convert_to_central(value):
+        try:
+            UTCvalue = datetime.strptime(value, '%Y-%m-%dT%H:%M:%SZ').replace(tzinfo=pytz.UTC)
+            return UTCvalue.astimezone(pytz.timezone('US/Central')).strftime('%Y-%m-%d %H:%M:%S')
+        except ValueError:
+            return value
+
     if isinstance(jsonObj, dict):
         for key, value in jsonObj.items():
-            if isinstance(value, dict):
+            if isinstance(value, (dict, list)):
                 canvasJsonDates(value)
-            elif isinstance(value, list):
-                for item in value:
-                    if isinstance(item, dict):
-                        canvasJsonDates(item)
-                    else:
-                        continue
-            else:
-                if isinstance(value, str):
-                    try:
-                        UTCvalue = datetime.strptime(value, '%Y-%m-%dT%H:%M:%SZ').replace(tzinfo=pytz.UTC)
-                        centralValue = UTCvalue.astimezone(pytz.timezone('US/Central')).strftime('%Y-%m-%d %H:%M:%S')
-                        jsonObj.update({key:centralValue})
-                    except ValueError:
-                        pass
-                    try:
-                        datetime.strptime(value, '%Y-%m-%dT%H:%M:%S%z')
-                        value = datetime.fromisoformat(value)
-                        centralValue = value.astimezone(pytz.timezone('US/Central')).strftime('%Y-%m-%d %H:%M:%S')
-                        jsonObj.update({key:centralValue})
-                    except ValueError:
-                        pass
-                else:
-                    continue
+            elif isinstance(value, str):
+                jsonObj[key] = convert_to_central(value)
     elif isinstance(jsonObj, list):
-        for item in jsonObj:
-            #for key, value in jsonObj.items():
-            if isinstance(item, dict):
+        for i, item in enumerate(jsonObj):
+            if isinstance(item, (dict, list)):
                 canvasJsonDates(item)
-            elif isinstance(item, list):
-                for item in value:
-                    if isinstance(item, dict):
-                        canvasJsonDates(item)
-                    else:
-                        continue
-            else:
-                if isinstance(value, str):
-                    try:
-                        UTCvalue = datetime.strptime(value, '%Y-%m-%dT%H:%M:%SZ').replace(tzinfo=pytz.UTC)
-                        centralValue = UTCvalue.astimezone(pytz.timezone('US/Central')).strftime('%Y-%m-%d %H:%M:%S')
-                        jsonObj.update({key:centralValue})
-                    except ValueError:
-                        pass
-                    try:
-                        datetime.strptime(value, '%Y-%m-%dT%H:%M:%S%z')
-                        value = datetime.fromisoformat(value)
-                        centralValue = value.astimezone(pytz.timezone('US/Central')).strftime('%Y-%m-%d %H:%M:%S')
-                        jsonObj.update({key:centralValue})
-                    except ValueError:
-                        pass
-                else:
-                    continue
+            elif isinstance(item, str):
+                jsonObj[i] = convert_to_central(item)
     return jsonObj
 
 
@@ -237,7 +202,6 @@ def realm():
     realmInput = ''
     realmOptions = {}
     print('')
-    #while realmInput != 'p' and realmInput != 's' and realmInput != 'c' and realmInput != 't':
     while realmInput != 'p' and realmInput != 'b' and realmInput != 't':
         realmInput = input('Please enter the realm to use: (p)rod, (b)eta/dev or (t)est/dev: ').lower().strip()
         if realmInput == 'p':    #PRODUCTION
@@ -395,11 +359,14 @@ def batchLookupReg(crHost, crXapikey, termcode: str, crns: list) -> dict:
 #---------------------------------------------------------
 
 def connect2Sql(dbUser, dbPass, dbHost, dbPort, dbSid):
-    '''create a connection to a SQL database'''
-    import cx_Oracle, sys
-    oraConn = cx_Oracle.connect('%s/%s@%s:%s/%s' % (dbUser, dbPass, dbHost, dbPort, dbSid))
-    cursor = oraConn.cursor()
-    return cursor
+    '''Create a connection to a SQL database.'''
+    import cx_Oracle
+    try:
+        oraConn = cx_Oracle.connect(f"{dbUser}/{dbPass}@{dbHost}:{dbPort}/{dbSid}")
+        return oraConn.cursor()
+    except cx_Oracle.DatabaseError as e:
+        print(f"Database connection error: {e}")
+        return None
 
 
 #---------------------------------------------------------
@@ -429,11 +396,9 @@ def now():
 def findCanvasSection(netId):
     """Return Canvas Section ID when UIUC SIS Section ID is provided"""
     import csv
-    #netId = input("Enter NetID:  ")
     csv_file = csv.reader(open("/var/lib/canvas-mgmt/config/canvas_sections.csv", "r", encoding="utf-8"), delimiter=",")
     for row in csv_file:
         if netId == row[1]:
-            #print (row)
             return str(row[0])
 
 
@@ -448,12 +413,9 @@ def findCanvasSections(canvasCourseId):
     with open("/var/lib/canvas-mgmt/config/canvas_sections.csv") as csv_file:
         csvF = csv.reader(csv_file, delimiter=",")
         for row in csvF:
-            #print(row[3])
             if canvasCourseId == row[3]:
                 returnList.append(row)
-                #print(row)
                 continue
-    #print("Complete")
     return returnList
 
 
@@ -464,11 +426,9 @@ def findCanvasSections(canvasCourseId):
 def findCanvasUser(netId):
     """Return Canvas user ID when UIUC NetID is provided"""
     import csv
-    #netId = input("Enter NetID:  ")
     csv_file = csv.reader(open("/var/lib/canvas-mgmt/config/canvas_users.csv", "r", encoding="utf-8"), delimiter=",")
     for row in csv_file:
         if netId == row[1]:
-            #print (row)
             return str(row[0])
 
 
@@ -480,11 +440,9 @@ def findCanvasCourse(courseId):
     """Return Canvas course ID when UIUC course ID is provided"""
     import csv
     from pprint import pprint
-    #courseId = input("Enter Course ID:  ")
     csv_file = csv.reader(open("/var/lib/canvas-mgmt/config/canvas_courses.csv", "r", encoding="utf-8"), delimiter=",")
     for row in csv_file:
         if courseId == row[1]:
-            #pprint (row)
             print()
             print(f'  > Canvas Course ID:   {row[0]}')
             print(f'  > UIUC Course ID:     {row[1]}')
