@@ -1,11 +1,12 @@
 #!/usr/bin/python
 #
-import os, sys, argparse
+import os, sys
+from sqlalchemy import create_engine, text
+from sqlalchemy.orm import sessionmaker
 from pprint import pprint
 sys.path.append("/var/lib/canvas-mgmt/bin")
 from canvasFunctions import realm
 from canvasFunctions import getEnv
-from canvasFunctions import connect2Sql
 from canvasFunctions import logScriptStart
 logScriptStart()
 #
@@ -23,10 +24,14 @@ response = 'x'
 answer = 'x'
 print('')
 #
-cursor = connect2Sql(dbUser, dbPass, dbHost, dbPort, dbSid)
+# Create SQLAlchemy engine and session
+db_url = f"oracle+oracledb://{dbUser}:{dbPass}@{dbHost}:{dbPort}/{dbSid}"
+engine = create_engine(db_url)
+Session = sessionmaker(bind=engine)
+session = Session()
 print(f'Connected to: {dbHost}')
 print('')
-#    envLabel = "STAGE"
+#
 while True:
     #
     netID = input('Please enter the NetID:  ')
@@ -42,8 +47,7 @@ while True:
                 LEFT JOIN CORREL.t_access_level al on(al.code = ual.ACCESS_LEVEL_ID)
                 where u.LOGIN = '{netID}'"""
         #
-        cursor.execute(userQuery)
-        userInfo = cursor.fetchall()
+        userInfo = session.execute(text(userQuery)).fetchall()
         #
         if len(userInfo) != 0 and userInfo[0][2] == 4:          # Elevated User Found
             print(f"Username:     {userInfo[0][1]}")
@@ -56,8 +60,8 @@ while True:
             if response == 'y':
                 delQuery = f"""DELETE FROM CORREL.T_USER_ACCESS_LEVEL ual
                                    WHERE ual.USER_ID = '{userInfo[0][0]}'"""
-                cursor.execute(delQuery)
-                cursor.execute("COMMIT")
+                session.execute(text(delQuery))
+                session.commit()
                 print()
                 print(f"> {netID} has been successfully de-elevated in the SRA {envLabel} Database")
                 print()
@@ -67,7 +71,7 @@ while True:
                 print('Exiting without changes')
                 response = 'x'
                 break
-        elif len(userInfo) !=0 and userInfo[0][2] is None:                    # Non-elevated User Found
+        elif len(userInfo) != 0 and userInfo[0][2] is None:                    # Non-elevated User Found
             print(f"Username:     {userInfo[0][1]}")
             print(f"Level:        non-Admin")
             print(f"Created Date: {userInfo[0][4]}")
@@ -79,10 +83,10 @@ while True:
                 elevQuery = f"""INSERT INTO CORREL.T_USER_ACCESS_LEVEL ual
                                 (ual.user_id, ual.product_id, ual.access_level_id)
                                 VALUES ('{userInfo[0][0]}', 'BB9', 4)"""
-                cursor.execute(elevQuery)
-                cursor.execute("COMMIT")
+                session.execute(text(elevQuery))
+                session.commit()
                 print()
-                print(f"> {netID} has been successefully elevated in the SRA {envLabel} Database")
+                print(f"> {netID} has been successfully elevated in the SRA {envLabel} Database")
                 print()
                 response = 'x'
                 break
@@ -104,5 +108,5 @@ while True:
         break
 #
 print('Closing connection and exiting...')
-cursor.close()
+session.close()
 print('')
