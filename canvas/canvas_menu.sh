@@ -6,10 +6,13 @@ pressKey() {
     read -n 1 -p "Press any key to continue..."
 }
 
-while :
-do
-    clear
-    cat<<EOF
+executeCommand() {
+    local command=$1
+    eval "$command"
+    pressKey
+}
+
+menuText=$(cat <<'EOF'
 
     ===============================================================================
                               Canvas@Illinois Operations
@@ -64,121 +67,49 @@ do
     ===============================================================================
 
 EOF
+)
+
+while :
+do
+    clear
+    echo "$menuText"
     read -n1 -s
     case "$REPLY" in
-
-    "a") ~/bin/canvas_course_enrollments_PROD.sh
-         pressKey ;;
-
-    "b") ~/bin/canvas_get_user_enrollments_live.sh
-         pressKey ;;
-
-    "c") ~/bin/canvas_get_course_info.sh
-         pressKey ;;
-
-    "d") ~/bin/canvas_get_user_info_live.sh
-         pressKey ;;
-
-    "e") ~/bin/canvas_audit_course.sh
-         pressKey ;;
-
-    "%") ~/bin/canvas_get_bulk_user_progress_in_course.sh
-         pressKey ;;
-
-    "=") ~/bin/canvas_sra_move_course.sh
-         pressKey ;;
-
-    "?") ~/bin/canvas_student_access_report.sh
-         pressKey ;;
-
-    "f") ~/bin/cr_member_info.sh
-         pressKey ;;
-
-    "g") ~/bin/canvas_enrollment_info_and_edit.sh
-         pressKey ;;
-
-    "h") ~/bin/canvas_enroll_user.sh
-         pressKey ;;
-
-    "i") ~/bin/canvas_observer_mgr.sh
-         pressKey ;;
-
-    "$") ~/bin/canvas_extend_course_for_single_student.sh
-         pressKey ;;
-
-    "@") ~/bin/canvas_sra_move_course.sh
-         presskey ;;
-
-    "#") ~/bin/canvas_add_enrollment_to_closed_course.sh
-         presskey ;;
-
-    "Z") ~/bin/canvas_export_course.sh
-         presskey ;;
-
-    "j") ~/bin/cd2_query_db.sh
-         pressKey ;;
-
-    "k") ~/bin/ad_user_info.sh
-         pressKey ;;
-
-    "l") ~/bin/ad_roster_by_crn_or_space.sh
-         pressKey ;;
-
-    "m") ~/bin/ad_crn_info.sh
-         pressKey ;;
-
-    "M") ~/bin/cr_crn_and_space_members.sh
-         pressKey ;;
-
-    "n") ~/bin/req_user_mgr.sh
-         pressKey ;;
-
-    "o") ~/bin/req_space_info.sh
-         pressKey ;;
-
-    "p") ~/bin/req_space_status_change.sh
-         pressKey ;;
-
-    "r") ~/bin/req_space_crn_edit.sh
-         pressKey ;;
-
-    "s") ~/bin/req_space_history.sh
-         pressKey ;;
-
-    "t") ~/bin/req_term_add.sh
-         pressKey ;;
-
-    "u") ~/bin/req_space_waiting.sh
-         pressKey ;;
-
-    "v") ~/bin/canvas_sis_id_details.sh
-         pressKey ;;
-
-    "w") ~/bin/canvas_sis_uploads_info.sh
-         pressKey ;;
-
-    "x") ~/bin/canvas_objects_download.sh
-         pressKey ;;
-
-    "y") echo ""
-         eval crontab -e
-         pressKey ;;
-
-    "z") echo "Starting Python 3.12 Virtual Development environment..."
-         echo ""
-         eval source ~/python312-venv/bin/activate
-         python
-         pressKey ;;
-
-    "+") ~/bin/generate_password.sh
-         pressKey ;;
-
-#    "w") PLACEHOLDER
-
-    "Q") exit ;;
-    "q") exit ;;
-     * ) echo "Invalid option..."
-         echo "" ;;
+        "a") executeCommand "~/bin/canvas_course_enrollments_PROD.sh" ;;
+        "b") executeCommand "~/bin/canvas_get_user_enrollments_live.sh" ;;
+        "c") executeCommand "~/bin/canvas_get_course_info.sh" ;;
+        "d") executeCommand "~/bin/canvas_get_user_info_live.sh" ;;
+        "e") executeCommand "~/bin/canvas_audit_course.sh" ;;
+        "%") executeCommand "~/bin/canvas_get_bulk_user_progress_in_course.sh" ;;
+        "=") executeCommand "~/bin/canvas_sra_move_course.sh" ;;
+        "?") executeCommand "~/bin/canvas_student_access_report.sh" ;;
+        "f") executeCommand "~/bin/cr_member_info.sh" ;;
+        "g") executeCommand "~/bin/canvas_enrollment_info_and_edit.sh" ;;
+        "h") executeCommand "~/bin/canvas_enroll_user.sh" ;;
+        "i") executeCommand "~/bin/canvas_observer_mgr.sh" ;;
+        "$") executeCommand "~/bin/canvas_extend_course_for_single_student.sh" ;;
+        "@") executeCommand "~/bin/canvas_sra_move_course.sh" ;;
+        "#") executeCommand "~/bin/canvas_add_enrollment_to_closed_course.sh" ;;
+        "Z") executeCommand "~/bin/canvas_export_course.sh" ;;
+        "j") executeCommand "~/bin/cd2_query_db.sh" ;;
+        "k") executeCommand "~/bin/ad_user_info.sh" ;;
+        "l") executeCommand "~/bin/ad_roster_by_crn_or_space.sh" ;;
+        "m") executeCommand "~/bin/ad_crn_info.sh" ;;
+        "M") executeCommand "~/bin/cr_crn_and_space_members.sh" ;;
+        "n") executeCommand "~/bin/req_user_mgr.sh" ;;
+        "o") executeCommand "~/bin/req_space_info.sh" ;;
+        "p") executeCommand "~/bin/req_space_status_change.sh" ;;
+        "r") executeCommand "~/bin/req_space_crn_edit.sh" ;;
+        "s") executeCommand "~/bin/req_space_history.sh" ;;
+        "t") executeCommand "~/bin/req_term_add.sh" ;;
+        "u") executeCommand "~/bin/req_space_waiting.sh" ;;
+        "v") executeCommand "~/bin/canvas_sis_id_details.sh" ;;
+        "w") executeCommand "~/bin/canvas_sis_uploads_info.sh" ;;
+        "x") executeCommand "~/bin/canvas_objects_download.sh" ;;
+        "y") echo ""; eval crontab -e; pressKey ;;
+        "z") echo "Starting Python 3.12 Virtual Development environment..."; echo ""; eval source ~/python312-venv/bin/activate; python; pressKey ;;
+        "+") executeCommand "~/bin/generate_password.sh" ;;
+        "Q"|"q") exit ;;
+        * ) echo "Invalid option..."; echo "" ;;
     esac
-#    sleep 1
 done
