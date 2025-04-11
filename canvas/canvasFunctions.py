@@ -1,4 +1,17 @@
 #---------------------------------------------------------
+# Pagination handling for Canvas API
+#---------------------------------------------------------
+
+def paginateCanvasApi(url, headers, params):
+    '''Generator function to handle paginated Canvas API responses.'''
+    while url:
+        response = requests.get(url, headers=headers, params=params)
+        response.raise_for_status()                      # Ensure HTTP errors are raised
+        yield from response.json()                       # Yield each item in the current page
+        url = response.links.get('next', {}).get('url')  # Get the next page URL
+
+
+#---------------------------------------------------------
 # look up UIUC sub-account name from Canvas account ID
 #---------------------------------------------------------
 
@@ -10,8 +23,8 @@ def canvasGetAccountName(canvasAccountID):
             if row[0] == canvasAccountID:
                 break
         return row
-#
-#
+
+
 def canvasGetUserEnrollments(canvasUserID, canvasBannerTerm='x'):
     '''Return enrollments for a selected user in Canvas'''
     from columnar import columnar
@@ -58,8 +71,8 @@ def canvasGetUserEnrollments(canvasUserID, canvasBannerTerm='x'):
         return table
     else:
         return False
-#
-#
+
+
 def canvasCourseInfo(canvasCourseID, canvasAPI, canvasAuth):
     """Return Canvas course info when UIUC course ID is provided"""
     import requests
@@ -79,8 +92,8 @@ def canvasCourseInfo(canvasCourseID, canvasAPI, canvasAuth):
     else:
         print()
         return canvasCourseInfoSearchResults
-#
-#
+
+
 def dmiGetInfo():
     '''Pulls unit/department info from the DMI'''
     dmiR = requests.get('https://dmi.illinois.edu/ddd/mkexcel.aspx?role=0&roleDesc=Execute%20Officer')
@@ -95,8 +108,8 @@ def dmiGetInfo():
         collname = row[18].rstrip()
         dmiTargetList.append([deptname, row[9], row[15], c_dept, collname])
     return dmiTargetList
-#
-#
+
+
 def convertDate(utcTempValue):
     '''Converts a Camvas UTC timestamp to US Central'''
     import datetime, pytz
@@ -107,8 +120,8 @@ def convertDate(utcTempValue):
         return centralValue
     except ValueError:
         pass
-#
-#
+
+
 def canvasJsonDates(jsonObj):
     import pytz
     from datetime import datetime
@@ -168,8 +181,8 @@ def canvasJsonDates(jsonObj):
                 else:
                     continue
     return jsonObj
-#
-#
+
+
 def chooseEnv():
     '''Choose the Canvas/SRA environment to use.'''
     import os, sys
@@ -213,8 +226,8 @@ def chooseEnv():
         envOptions['canvasTerms'] = envDict['canvas.terms'].split(',')
         print('')
     return envOptions
-#
-#
+
+
 def realm():
     '''Choose the Canvas/SRA environment to use. All settings are wrapped into a REALM'''
     import os, sys
@@ -268,8 +281,8 @@ def realm():
         realmOptions['canvasAccountId'] = '1'
         print('')
     return realmOptions
-#
-#
+
+
 #---------------------------------------------------------
 # CRN Lookup using Class Rosters API
 #---------------------------------------------------------
@@ -281,8 +294,8 @@ def crnLookup(crHost, crXapikey, termCode, crn):
     headers = {"X-API-KEY": crXapikey}
     response = requests.get(url, headers=headers).json()
     return response
-#
-#
+
+
 #---------------------------------------------------------
 # Log the initiation of a script fun and who did it
 #---------------------------------------------------------
@@ -299,8 +312,8 @@ def logScriptStart():
         os.mknod(logFile)
     with open(logFile, 'a') as targetLog:
         targetLog.write(f"{now} | {currentUser} | {scriptName}" + "\n")
-#
-#
+
+
 #---------------------------------------------------------
 # look up a Canvas User ID based on NetID input
 #---------------------------------------------------------
@@ -322,8 +335,8 @@ def canvasGetUserInfo(netID):
             else:
                 continue
         return "False"
-#
-#
+
+
 #---------------------------------------------------------
 # look up UNIT sub-accounts
 #---------------------------------------------------------
@@ -340,8 +353,8 @@ def canvasGetAccountUnits():
             return "False"
         else:
             return uiucUnits
-#
-#
+
+
 #--------------------------------------------------------
 # look up Canvas Account ID from UIUC Unit
 #--------------------------------------------------------
@@ -360,8 +373,8 @@ def canvasGetAccountID(uiucAccount):
             return canvasAccountID
         else:
             return "False"
-#
-#
+
+
 #---------------------------------------------------------
 # perform lookups on batches of CRNs
 #---------------------------------------------------------
@@ -375,8 +388,8 @@ def batchLookupReg(crHost, crXapikey, termcode: str, crns: list) -> dict:
     data = {"termcode": termcode, "crns": crns}
     response = requests.post(url, headers=headers, json=data)
     return response.json()
-#
-#
+
+
 #---------------------------------------------------------
 # connect to a SQL database
 #---------------------------------------------------------
@@ -387,8 +400,8 @@ def connect2Sql(dbUser, dbPass, dbHost, dbPort, dbSid):
     oraConn = cx_Oracle.connect('%s/%s@%s:%s/%s' % (dbUser, dbPass, dbHost, dbPort, dbSid))
     cursor = oraConn.cursor()
     return cursor
-#
-#
+
+
 #---------------------------------------------------------
 # Get today's date in this format:  '2022-09-01'
 #---------------------------------------------------------
@@ -397,8 +410,8 @@ def today():
    """Return the current date as a string"""
    import time
    return str(time.strftime('%Y-%m-%d'))
-#
-#
+
+
 #---------------------------------------------------------
 # Get date/time in this format: '2022-09-01 09:45:19'
 #---------------------------------------------------------
@@ -407,8 +420,8 @@ def now():
     """Return the current date/time as a string"""
     import time
     return str(time.strftime('%Y-%m-%d %H:%M:%S'))
-#
-#
+
+
 #---------------------------------------------------------
 # Converts a UIUC Section ID to a Canvas Section ID
 #---------------------------------------------------------
@@ -422,8 +435,8 @@ def findCanvasSection(netId):
         if netId == row[1]:
             #print (row)
             return str(row[0])
-#
-#
+
+
 #---------------------------------------------------------
 # Returns a list of sections in a Canvas course
 #---------------------------------------------------------
@@ -442,8 +455,8 @@ def findCanvasSections(canvasCourseId):
                 continue
     #print("Complete")
     return returnList
-#
-#
+
+
 #---------------------------------------------------------
 # Converts a UIUC NetID to a Canvas ID (string)
 #---------------------------------------------------------
@@ -457,8 +470,8 @@ def findCanvasUser(netId):
         if netId == row[1]:
             #print (row)
             return str(row[0])
-#
-#
+
+
 #---------------------------------------------------------
 # Converts a UIUC course ID to a Canvas ID (string)
 #---------------------------------------------------------
@@ -482,8 +495,8 @@ def findCanvasCourse(courseId):
             print(f'  > Course Status:      {row[9]}')
             print()
             return str(row[0])
-#
-#
+
+
 #---------------------------------------------------------
 # Event Log Handling
 #---------------------------------------------------------
@@ -494,8 +507,8 @@ def eventLog(eventDetail, logLocation):
     logFile = open(logLocation, 'a+')
     logFile.write('%s %s \n' % (time.asctime(), eventDetail))
     logFile.close()
-#
-#
+
+
 #---------------------------------------------------------
 # connect to a Blackboard instance using REST API
 #---------------------------------------------------------
@@ -509,8 +522,8 @@ def connect2Bb(key, secret, url):
         return bb
     except:
         return False
-#
-#
+
+
 #---------------------------------------------------------
 # create an initial connection to Box using the REST API
 # requires:  from boxsdk import JWTAuth, Client
@@ -525,8 +538,8 @@ def connect2Box(boxJwtAuthFile='/var/lib/canvas-mgmt/config/83165_6no30ljy_confi
         return boxClient
     except:
         return False
-#
-#
+
+
 #---------------------------------------------------------
 # Creates a subfolder in U of I Box based on the provided
 # parent folder ID. Returns folder ID of new folder.
@@ -546,8 +559,8 @@ def createBoxFolder(boxClient, boxFolderName, boxParentFolderId):
         return boxFolderId
     except:
         return False
-#
-#
+
+
 #---------------------------------------------------------
 # upload a file to a folder on Box
 #---------------------------------------------------------
@@ -559,8 +572,8 @@ def upload2Box(boxClient, boxTargetFolderId, sourceFilePath, sourceFilename):
         return r
     except:
         return False
-#
-#
+
+
 #---------------------------------------------------------
 # share a folder with a user on Box
 #---------------------------------------------------------
@@ -574,8 +587,8 @@ def shareBoxFolder(boxClient, boxFolderId, boxCollaboratorEmail, boxCollaborator
         return boxSharedLink
     except:
         return False
-#
-#
+
+
 #---------------------------------------------------------
 # get a date formated as:  YYYY-MM-DD
 #---------------------------------------------------------
@@ -592,8 +605,8 @@ def getDate():
             print(daTe + ' is invalid. Please try again: '),
             continue
     return daTe
-#
-#
+
+
 #---------------------------------------------------------
 # get a 24-hour time formated as:  HH:MM:SS
 #---------------------------------------------------------
@@ -610,8 +623,8 @@ def getTime():
             print(tiMe + ' is invalid. Please try again: '),
             continue
     return tiMe
-#
-#
+
+
 #---------------------------------------------------------
 # convert date (YYYY-MM-DD) to epoch specifically for use
 # to modify Microsoft Active Directory objects
@@ -625,8 +638,8 @@ def date2Epoch(daTe):
     tempDate = int(time.mktime(time.strptime(dateTime,pattern)))
     epochDate = (tempDate + 11644473600) * 10000000
     return int(epochDate)
-#
-#
+
+
 #---------------------------------------------------------
 # create a simple password
 #---------------------------------------------------------
@@ -658,8 +671,8 @@ def randomPw(newPwLength = 8):
     newPwChars = f"{ascii_uppercase}{ascii_lowercase}{digits}"
     newPw = str(''.join(rc(newPwChars) for x in range(newPwLength,20)))
     return newPw
-#
-#
+
+
 #---------------------------------------------------------
 # ask a simple yes or no and return true or false
 #---------------------------------------------------------
@@ -672,8 +685,8 @@ def yesOrNo(question):
             return True
         if reply[:1] == 'n':
             return False
-#
-#
+
+
 #---------------------------------------------------------
 #
 # Facilitates connection to an LDAP directory or Microsoft
@@ -696,8 +709,8 @@ def bind2Ldap(ldapHost, ldapBindDn, ldapBindPw):
         return ldapConn
     except:
         return False
-#
-#
+
+
 #---------------------------------------------------------
 # check AD/ldap to see if a username already exists
 # Requires a valid ldap Connection
@@ -721,8 +734,9 @@ def ldapSearchByNetId(ldapConn, ldapSearchBase, netId):
         return netIdSearch
     else:
         print('>>> Not bound to AD or LDAP <<<')
-#
-#
+
+
+
 def gen_guest_pwd():
 
     #---------------------------------------------------------
@@ -759,8 +773,8 @@ def gen_guest_pwd():
 
     PASSWORD = guestpw
     return PASSWORD
-#
-#
+
+
 def getEnv(envConfFilePath='/var/lib/canvas-mgmt/config/environment_dot.conf'):
     '''parse the environment_dot.conf file into a dictionary for use'''
     #---------------------------------------------------------
@@ -799,8 +813,8 @@ def getEnv(envConfFilePath='/var/lib/canvas-mgmt/config/environment_dot.conf'):
             lineCount = lineCount + 1
 
     return envDict
-#
-#
+
+
 def get_epoch(exp_date):
 
     #---------------------------------------------------------
@@ -821,8 +835,8 @@ def get_epoch(exp_date):
     epoch_date = (temp_date + 11644473600) * 10000000
 
     return epoch_date
-#
-#
+
+
 def get_date():
 
     #---------------------------------------------------------
