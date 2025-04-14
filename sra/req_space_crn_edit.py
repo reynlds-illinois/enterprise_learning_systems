@@ -1,29 +1,30 @@
-import os, time, cx_Oracle, urllib, sys, json, requests, argparse
-from pprint import pprint
+import sys, argparse, requests, urllib
+from sqlalchemy import create_engine, text
+from sqlalchemy.orm import sessionmaker
 sys.path.append("/var/lib/canvas-mgmt/bin")
 from canvasFunctions import getEnv
-#from canvasFunctions import crnLookup
-from canvasFunctions import connect2Sql
 from canvasFunctions import logScriptStart
 from columnar import columnar
-#
+
+# Initialize environment
 envDict = getEnv()
 env = 'x'
 crns = []
 crnList = []
 crnChange = 'x'
 rosterDSK = 'AD'
-inputCRN = ''
 crnHeader = ['ID', 'Rubric', 'Level', 'Section', 'Term']
 crHost = envDict['class.rosters.host']
 crXapikey = envDict['class.rosters.xapi']
 logScriptStart()
 print('')
-#
+
+# Parse arguments
 parser = argparse.ArgumentParser(add_help=True)
 parser.add_argument('-s', dest='SPACEID', action='store', help='The globally-unique 6-digit space ID', type=str)
 args = parser.parse_args()
-#
+
+# Determine environment
 while env != 'p' and env != 's':
     env = input('Please enter the realm to use: (p)rod or (s)tage: ').lower()[0]
     if env == 'p':
@@ -43,14 +44,20 @@ while env != 'p' and env != 's':
 print('')
 print(f"> Connected to:  {dbHost}:{dbPort}")
 print('')
-#
-cursor = connect2Sql(dbUser, dbPass, dbHost, dbPort, dbSid)
-#
+
+# Create SQLAlchemy engine and session
+db_url = f"oracle+oracledb://{dbUser}:{dbPass}@{dbHost}:{dbPort}/{dbSid}"
+engine = create_engine(db_url)
+Session = sessionmaker(bind=engine)
+session = Session()
+
+# Get space ID
 if not args.SPACEID:
     spaceID = int(input('Please enter the space ID:  '))
 else:
     spaceID = int(args.SPACEID)
-#
+
+# Query CRN information
 crnInfoQuery = f"""SELECT SRR.ROSTER_DATA_SOURCE_KEY CRN,
        SRR.ROSTER_DATA_SOURCE_KEY CRN,
        ADR.RUBRIC,
@@ -60,9 +67,8 @@ crnInfoQuery = f"""SELECT SRR.ROSTER_DATA_SOURCE_KEY CRN,
 FROM CORREL.T_SPACE_ROSTER SRR
   LEFT JOIN CORREL.T_AD_ROSTER ADR on(SRR.ROSTER_DATA_SOURCE_KEY = ADR.CRN and SRR.TERM_CODE = ADR.TERM_CODE)
 WHERE SRR.SPACE_ID = {spaceID}"""
-#
-cursor.execute(crnInfoQuery)
-crnInfo = cursor.fetchall()
+
+crnInfo = session.execute(text(crnInfoQuery)).fetchall()
 if len(crnInfo) == 0:
     print(f"> No CRNs are found for space ID {spaceID}.")
     print('')
@@ -74,15 +80,15 @@ else:
     crnTable = columnar(crns, crnHeader, no_borders=True, justify='c', min_column_width=8)
     print(crnTable)
     print('')
-#
+
+# Handle CRN changes
 while crnChange != 'a' and crnChange != 'r' and crnChange != 'q':
     crnChange = input(f"Would you like to (a)dd or (r)emove a CRN from space ID {spaceID} or (q)uit: ").lower()[0]
 print('')
 if crnChange == 'q':
     print("> Exiting without changes...")
-    #break
 elif crnChange == 'r':
-    remChoice = 'x'
+    inputCRN = ''
     while inputCRN not in crnList:
         inputCRN = input("Enter CRN from the above table: ")
     termID = input("Enter Banner Term ID: ")
@@ -90,18 +96,16 @@ elif crnChange == 'r':
     remChoice = input(f"Remove CRN {inputCRN} from space ID {spaceID} for term {termID} (y/n)? ").lower()[0]
     if remChoice == 'n':
         print("> Exiting without changes...")
-        #break
     else:
         print("Removing CRN...")
-        remSqlTSR = f"""DELETE FROM correl.t_space_roster tsr
-                        WHERE tsr.roster_data_source_key = {inputCRN}
-                            AND tsr.space_id = {spaceID}
-                            AND tsr.term_code = {termID}"""
-        cursor.execute(remSqlTSR)
-        cursor.execute("COMMIT")
+        remSqlTSR = text("""DELETE FROM correl.t_space_roster tsr
+                            WHERE tsr.roster_data_source_key = :inputCRN
+                                AND tsr.space_id = :spaceID
+                                AND tsr.term_code = :termID""")
+        session.execute(remSqlTSR, {"inputCRN": inputCRN, "spaceID": spaceID, "termID": termID})
+        session.commit()
         print("> CRN Removed and Committed...")
-        cursor.execute(crnInfoQuery)
-        crnInfo = cursor.fetchall()
+        crnInfo = session.execute(text(crnInfoQuery)).fetchall()
         print(f"> Updated CRN Info for Space ID: {spaceID}")
         crns = []
         for line in crnInfo:
@@ -136,7 +140,6 @@ else:
             addChoice = input(f"Add CRN {newCRN} to space ID {spaceID} for term {termID} (y/n)? ").lower()[0]
             if addChoice == 'n':
                 print("> Exiting without changes...")
-                #break
             else:
                 print("> Writing changes...")
                 # T_SPACE_ROSTER Table
@@ -144,24 +147,25 @@ else:
                             (tsr.space_id, tsr.roster_data_source_key,
                              tsr.roster_data_source_id, tsr.term_code)
                              values({spaceID}, {newCRN}, '{rosterDSK}', {termID})"""
-                cursor.execute(addSqlTSR)
-                cursor.execute("COMMIT")
-                time.sleep(1)
+                try:
+                    session.execute(text(addSqlTSR))
+                    session.commit()
+                except Exception as e:
+                    session.rollback()  # Roll back the transaction
+                    print(f"Error occurred while adding CRN: {e}")
                 # T_AD_ROSTER Table
                 readTARSql = f"""SELECT * FROM correl.t_ad_roster
                                  WHERE term_code = {termID} and crn = {newCRN}"""
-                cursor.execute(readTARSql)
-                crnCheck = cursor.fetchall()
+                crnCheck = session.execute(text(readTARSql)).fetchall()
                 if len(crnCheck) == 0:
                     addSqlTAR = f"""INSERT INTO correl.t_ad_roster tar
                                 (tar.controlling_dept_key, tar.rubric, tar.course_number,
                                  tar.section, tar.crn, tar.term_code)
                                  values('{controllingDept}', '{rubric}', '{level}', '{section}', '{crn}', '{term}')"""
-                    cursor.execute(addSqlTAR)
-                    cursor.execute("COMMIT")
+                    session.execute(text(addSqlTAR))
+                    session.commit()
                 print("> CRN Successfully added to Space and committed")
-                cursor.execute(crnInfoQuery)
-                crnInfo = cursor.fetchall()
+                crnInfo = session.execute(text(crnInfoQuery)).fetchall()
                 print(f"> Updated CRN Info for Space ID: {spaceID}")
                 crns = []
                 for line in crnInfo:
@@ -169,5 +173,5 @@ else:
                 crnTable = columnar(crns, crnHeader, no_borders=True, justify='c', min_column_width=8)
                 print(crnTable)
                 print('')
-cursor.close()
+session.close()
 print('')
