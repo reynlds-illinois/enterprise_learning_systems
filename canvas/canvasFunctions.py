@@ -31,7 +31,7 @@ def canvasGetAccountName(canvasAccountID):
     return None  # Return None if account ID is not found
 
 
-def canvasGetUserEnrollments(canvasUserID, canvasBannerTerm='x'):
+def canvasGetUserEnrollments(canvasUserID, canvasApi, authHeader, canvasBannerTerm='x'):
     '''Return enrollments for a selected user in Canvas.'''
     import requests
     from columnar import columnar
@@ -95,6 +95,8 @@ def canvasCourseInfo(canvasCourseID, canvasAPI, canvasAuth):
 
 def dmiGetInfo():
     '''Pulls unit/department info from the DMI'''
+    import requests
+    import pandas as pd
     dmiR = requests.get('https://dmi.illinois.edu/ddd/mkexcel.aspx?role=0&roleDesc=Execute%20Officer')
     dmiConverted = pd.read_excel(dmiR.content).to_csv(index=None, header=True, encoding='utf-8', sep='|').splitlines()
     dmiTempList = []
