@@ -46,7 +46,6 @@ menuText=$(cat <<'EOF'
     Active Directory - Class Rosters:
        (k) AD: User Info (PROD)
        (l) AD: Roster List by CRN or Space ID (PROD/STAGE)
-       (m) AD: CRN Info (PROD)
        (M) CR: CRN and Space Members (with SIS course ID)
 
     Space Request Application:
@@ -94,7 +93,6 @@ do
         "j") executeCommand "~/bin/cd2_query_db.sh" ;;
         "k") executeCommand "~/bin/ad_user_info.sh" ;;
         "l") executeCommand "~/bin/ad_roster_by_crn_or_space.sh" ;;
-        "m") executeCommand "~/bin/ad_crn_info.sh" ;;
         "M") executeCommand "~/bin/cr_crn_and_space_members.sh" ;;
         "n") executeCommand "~/bin/req_user_mgr.sh" ;;
         "o") executeCommand "~/bin/req_space_info.sh" ;;
