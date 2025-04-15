@@ -1,5 +1,8 @@
-import cx_Oracle, sys, argparse
+#!/usr/bin/python
+#
+import sys, argparse
 from pprint import pprint
+from sqlalchemy import create_engine, text
 sys.path.append("/var/lib/canvas-mgmt/bin")
 from canvasFunctions import getEnv
 from canvasFunctions import connect2Sql
@@ -13,9 +16,9 @@ logScriptStart()
 choice = ''
 print('')
 #
-parser = argparse.ArgumentParser(add_help=True)
-parser.add_argument('-s', dest='SPACEID', action='store', help='The globally-unique 6-digit space ID', type=str)
-args = parser.parse_args()
+#parser = argparse.ArgumentParser(add_help=True)
+#parser.add_argument('-s', dest='SPACEID', action='store', help='The globally-unique 6-digit space ID', type=str)
+#args = parser.parse_args()
 #
 while env != 'p' and env != 's':
     env = input('Please enter the realm to use: (p)rod or (s)tage: ').lower()[0]
@@ -37,12 +40,12 @@ print('')
 print(f"Connected to: {dbHost}:{dbPort}")
 print('')
 #
-cursor = connect2Sql(dbUser, dbPass, dbHost, dbPort, dbSid)
+connection = connect2Sql(dbUser, dbPass, dbHost, dbPort, dbSid)
 #
-if not args.SPACEID:
-    spaceID = int(input('Please enter the space ID: '))
-else:
-    spaceID = int(args.SPACEID)
+#if not args.SPACEID:
+spaceID = int(input('Please enter the space ID: '))
+#else:
+#    spaceID = int(args.SPACEID)
 #
 spaceInfoQuery = f"""SELECT SR.SPACE_ID SPACE_ID,
   /* non-xml elements */
@@ -122,8 +125,8 @@ FROM CORREL.T_SPACE_REQUEST SR
 WHERE SR.PRODUCT_ID = 'BB9'
   AND SR.SPACE_ID in ({spaceID})"""
 #
-cursor.execute(spaceInfoQuery)
-spaceInfo = cursor.fetchall()
+result = connection.execute(spaceInfoQuery)
+spaceInfo = result.fetchall()
 
 print('')
 print('|=============================== INFO ===============================')
@@ -132,7 +135,6 @@ print('| STATUS        =', spaceInfo[0][3], '-', spaceInfo[0][4])
 print('| COURSE_ID     =', spaceInfo[0][15])
 print('|====================================================================')
 oldStatus = spaceInfo[0][3]
-#cursor.close()
 print('')
 print('| Available Statuses:  15   Build Space')
 print('|                      360  Space is Ready')
@@ -155,23 +157,23 @@ while choice != 'y' and choice != 'n':
 print('')
 if choice == 'n':
     print("Exiting without changes...")
-    cursor.close()
+    connection.close()
     print('')
 else:
     statusChangeSql = f"""UPDATE CORREL.t_space_request sr
                       SET sr.status_id = {newStatusID}
                       WHERE sr.product_id = 'BB9'
                           AND sr.space_id = {spaceID}"""
-    cursor.execute(statusChangeSql)
-    cursor.execute("COMMIT")
+    connection.execute(statusChangeSql)
+    connection.execute("COMMIT")
     print("Change successful:")
     print('')
-    cursor.execute(spaceInfoQuery)
-    spaceInfo = cursor.fetchall()
+    result = connection.execute(spaceInfoQuery)
+    spaceInfo = result.fetchall()
     print('|========================== UPDATED INFO ============================')
     print('| SPACE_ID      =', spaceInfo[0][0])
     print('| STATUS        =', spaceInfo[0][3], '-', spaceInfo[0][4])
     print('| COURSE_ID     =', spaceInfo[0][15])
     print('|====================================================================')
-    cursor.close()
+    connection.close()
     print('')
