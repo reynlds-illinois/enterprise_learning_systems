@@ -1,153 +1,151 @@
 #!/usr/bin/python
 #
-import sys, os, json, csv, requests, time, datetime
+import os, sys, time, base64
 from pprint import pprint
-from datetime import date
-from datetime import datetime
-from columnar import columnar
+sys.path.append("/var/lib/canvas-mgmt//bin")
+from selenium import webdriver
+from selenium.webdriver.chrome.service import Service as ChromeService
+from webdriver_manager.chrome import ChromeDriverManager
+from selenium.webdriver.chrome.options import Options
+from selenium.webdriver.common.by import By
+from selenium.webdriver.support import expected_conditions as EC
+from selenium.webdriver.support.wait import WebDriverWait
+from selenium.common.exceptions import TimeoutException
 from boxsdk import JWTAuth, Client
 from boxsdk.exception import BoxAPIException
 from boxsdk.object.collaboration import CollaborationRole
-sys.path.append("/var/lib/canvas-mgmt/bin")     # working sys path
-from canvasFunctions import realm               # choose the environment in which to work
-from canvasFunctions import findCanvasCourse    # convert UIUC course ID to Canvas course ID
-from canvasFunctions import canvasGetUserInfo   # convert UIUC NetID to Canvas user ID
-from canvasFunctions import getDate             # a date specifically formatted for YEAR-MO-DA
-from canvasFunctions import canvasJsonDates
-from canvasFunctions import logScriptStart
-logScriptStart()
-print('')
-#
-now = int(time.time())
+from canvasFunctions import realm
+from canvasFunctions import getEnv
+from canvasFunctions import canvasGetUserInfo
+from canvasFunctions import findCanvasCourse
+
+env = getEnv()
 realm = realm()
-print(f'Connected to {realm["envLabel"]} - {realm["canvasUrl"]}')
-print('')
-canvasApi = realm['canvasApi']
-canvasToken = realm['canvasToken']
-authHeader = {"Authorization": f"Bearer {canvasToken}"}
-#boxAuth = JWTAuth.from_settings_file('/var/lib/canvas-mgmt/config/box_canvas_integration.json')
-boxAuth = JWTAuth.from_settings_file('/var/lib/canvas-mgmt/config/83165_6no30ljy_config.json')
+canvasURL = realm['canvasUrl']
+jwtAuthFile = env['uofi.box.jwtauth.file']
+canvasUser = env['cm.user']
+canvasPass = env['cm.pass']
+boxJwtAuthFile = env['uofi.box.jwtauth.file']
+boxAuth = JWTAuth.from_settings_file(boxJwtAuthFile)
 boxClient = Client(boxAuth)
-columnHeaders = ['TYPE', 'DATE/TIME', 'ACTION(S)']
-csvPath = '/var/lib/canvas-mgmt/reports/'
-netID = 'False'
-courseID = 'False'
-yesNo = 'x'
-uploadToBox = 'x'
-#
-while uploadToBox != 'y' and uploadToBox != 'n':
-    uploadToBox = input('>>> Upload and share these results on BOX (y/n)? ').lower().strip()
-    print()
-if uploadToBox == 'y':
-    tdxTicket = input('Enter the TDX ticket (only numbers): ')
-    print()
-    requestorNetID = input('Enter the NetID of the TDX requestor: ')
-    print()
-    requestorEmailAddress = f'{requestorNetID}@illinois.edu'
-    boxParentFolderID = '145486921579'
-    boxRequstorRole = 'Viewer'
-    tempFolderName = f'tdx_{tdxTicket}'
-else: tdxTicket = time.time()
-tempFileName = f'tdx_{tdxTicket}_access_report.csv'
-tempFilePath = f'{csvPath}{tempFileName}'
+boxParentFolderID = env['145486921579']
+boxRequstorRole = 'Viewer'
+reportsPath = '/var/lib/canvas-mgmt/reports/'
+
+tdxTicket = input('  > Enter TDX ticket         : ')
+print()
+requestorNetID = input('  > Enter the NetID of the TDX requestor: ')
+print()
+netID = input    ("  > Enter the student's NetID: ")
+print()
+courseID = input ('  > Enter the Course ID      : ')
 print()
 #
-while netID == 'False':
-    netID = input('Enter the NetID of the student: ')
-    print()
 canvasUserID = canvasGetUserInfo(netID)[0]
-while courseID == 'False':
-    courseID = input('Enter the UIUC Course ID of the course: ')
-    print()
 canvasCourseID = findCanvasCourse(courseID)
+reportURL = f'{canvasURL}courses/{canvasCourseID}/users/{canvasUserID}/usage'
+targetFileName = f'tdx_{tdxTicket}_access_report.pdf'
+targetFilePath = f'{reportsPath}{targetFileName}'
+requestorEmailAddress = f'{requestorNetID}@illinois.edu'
+boxFolderName = f'tdx_{tdxTicket}'
 #
-#
-#
-pvList = []
-partList = []
-accessList = []
-url = f'{canvasApi}courses/{canvasCourseID}/analytics/users/{canvasUserID}/activity'
-r = requests.get(url, headers=authHeader)
-if r.status_code == 200:
-    r = r.json()
-#
-if len(r) > 0:
-    r = canvasJsonDates(r)
-    accessList.append(columnHeaders)
-    if len(r['page_views']) > 0:
-        for item in r['page_views']:
-            pvList.append(item)
-        for item in pvList:
-            accessList.append(['page-views', item, r['page_views'][item]])
-    if len(r['participations']) > 0:
-        for item in r['participations']:
-            accessList.append(['participation', item['created_at'], item['url']])
-#
-for item in accessList:     # Fixup date formatting/TZ
-    if item[0] == 'page-views':
-        date_string_with_offset = item[1]
-        # Parse the date string, including the offset
-        datetime_object = datetime.fromisoformat(date_string_with_offset)
-        # Remove the time offset
-        datetime_object_no_offset = datetime_object.replace(tzinfo=None)
-        # Format the datetime object back to a string, if needed
-        date_string_no_offset = datetime_object_no_offset.strftime("%Y-%m-%d")
-        # replace original with newly formatted date
-        item[1] = item[1].replace(item[1], date_string_no_offset)
-#
-accessList = sorted(accessList, key=lambda x: x[1], reverse=True)
-accessTable = columnar(accessList, no_borders=True)
-print('===== STUDENT ACCESS SUMMARY ======')
-print(accessTable)
-print('===================================')
-print()
-#
-#while yesNo != 'y' and yesNo != 'n':
-#    yesNo = input('>>> Proceed with upload to BOX (y/n)? ').strip().lower()
-#
-print()
-#if yesNo == 'y':
-try:    # write table to local CSV
-    with open(tempFilePath, 'w', newline='') as csvFile:
-        writer = csv.writer(csvFile)
-        writer.writerows(accessList)
-        writer.writerow(['===== USER/COURSE INFO ====='])
-        writer.writerow([f' - Student NetID: {netID}'])
-        writer.writerow([f' - Course ID: {courseID}'])
-    print(f'= Successfully report to CSV: {tempFilePath}')
-except Exception as e:
-    print(f'!!! Error: {e}')
-    print()
-    #
-try:
-    if uploadToBox == 'y':
-        while yesNo != 'y' and yesNo != 'n':
-            yesNo = input('>>> Proceed with upload to BOX (y/n)? ').strip().lower()
-            print()
-        try:
-            # create target folder in BOX
-            boxCreateTargetFolder = boxClient.folder(boxParentFolderID).create_subfolder(tempFolderName)
-            boxTargetFolderID = int(boxCreateTargetFolder['id'])
-            print('= Successfully created the BOX target folder.')
-            print()
-            # upload local CSV file to new BOX target folder
-            r = boxClient.folder(boxTargetFolderID).upload(tempFilePath, tempFileName)
-            print(r)
-            print('= Successfully uploaded the CSV to BOX.')
-            # share new BOX target folder with TDX requestor
-            x = boxClient.folder(boxTargetFolderID).collaborate_with_login(requestorEmailAddress,CollaborationRole.VIEWER)
-            boxSharedLink = f'https://uofi.box.com/folder/{boxTargetFolderID}'
-            print()
-            print('=====================================')
-            print('==')
-            print(f'== Folder successfully shared in BOX:  {boxSharedLink}')
-            print('==')
-            print('=====================================')
-        except Exception as e:
-            print(f'!!! Error During BOX Actions: {e}')
-except Exception as e:
-    print(f'!!! Error: {e}')
-    print()
-print()
-print(f'>>> Exiting {canvasApi}...')
-print()
+def setup_browser():
+    """Set up the Chrome browser instance."""
+    chrome_options = Options()
+    chrome_options.add_argument("--headless")
+    chrome_options.add_argument("--disable-gpu")
+    chrome_options.add_argument("--no-sandbox")
+    chrome_options.add_argument("--verbose")
+    chrome_options.add_argument("--enable-javascript")
+    driver = webdriver.Chrome(options=chrome_options)
+    driver.implicitly_wait(3)
+    return driver
+
+def canvasLogin(driver, canvasUser, canvasPass):
+    """Authenticate the user."""
+    driver.get("https://illinoisedu.beta.instructure.com/login/canvas")
+    usernameField = driver.find_element(By.XPATH, '//*[@id="pseudonym_session_unique_id"]')
+    passwordField = driver.find_element(By.XPATH, '//*[@id="pseudonym_session_password"]')
+    submitButton = driver.find_element(By.XPATH, '/html/body/div[3]/div[2]/div/div/div[1]/div/div/div/div/div/div[2]/form[1]/div[3]/div[2]/input')
+
+    usernameField.send_keys(canvasUser)
+    passwordField.send_keys(canvasPass)
+    submitButton.click()
+
+    # Optionally, verify login success
+    WebDriverWait(driver, 10).until(
+        EC.presence_of_element_located((By.XPATH, '//*[@id="global_nav_profile_link"]'))
+    )
+    print("Login successful")
+
+def student_access_report_export(driver, reportURL, targetFilePath):
+    """Scroll to load JavaScript content and export the page to a PDF."""
+    driver.get(reportURL)
+    try:
+        # Scroll to the bottom of the page to load all content
+        driver.execute_script("window.scrollTo(0, document.body.scrollHeight);")
+        WebDriverWait(driver, 5).until(
+            EC.presence_of_element_located((By.XPATH, '//*[@id="content"]'))
+        )
+        print("JavaScript content loaded successfully")
+        print()
+
+        # Export the page to a PDF
+        pdf_data = driver.execute_cdp_cmd("Page.printToPDF", {
+            "format": "A4",  # Set the page format (e.g., A4, Letter)
+            "printBackground": True  # Include background graphics
+        })
+
+        # Decode the base64-encoded PDF data
+        decoded_pdf_data = base64.b64decode(pdf_data["data"])
+
+        # Save the decoded PDF data to a file
+        with open(targetFilePath, "wb") as pdf_file:
+            pdf_file.write(decoded_pdf_data)
+        print()
+        print(f"Page exported to {targetFilePath} successfully")
+
+    except TimeoutException:
+        print("Error: Timeout while waiting for JavaScript content to load.")
+        # Optionally, capture a screenshot for debugging
+        driver.save_screenshot("timeout_error.png")
+        print("Screenshot saved as 'timeout_error.png'.")
+
+def uploadToBox(targetFilePath, targetFileName, boxParentFolderID, boxFolderName, requestorEmailAddress):
+    try:
+        # create target folder in BOX
+        boxCreateTargetFolder = boxClient.folder(boxParentFolderID).create_subfolder(boxFolderName)
+        boxTargetFolderID = int(boxCreateTargetFolder['id'])
+        print('  = Successfully created the BOX target folder.')
+        print()
+        # upload local CSV file to new BOX target folder
+        r = boxClient.folder(boxTargetFolderID).upload(targetFilePath, targetFileName)
+        #print(r)
+        print('  = Successfully uploaded the CSV to BOX.')
+        # share new BOX target folder with TDX requestor
+        x = boxClient.folder(boxTargetFolderID).collaborate_with_login(requestorEmailAddress,CollaborationRole.VIEWER)
+        boxSharedLink = f'https://uofi.box.com/folder/{boxTargetFolderID}'
+        print()
+        print('  ==')
+        print(f'  == Folder successfully shared in BOX:  {boxSharedLink}')
+        print('  ==')
+    except Exception as e:
+        print(f'!!! Error During BOX Actions: {e}')
+
+def main():
+    """Main function to run the tests."""
+    driver = setup_browser()
+    try:
+        print()
+        canvasLogin(driver, canvasUser, canvasPass)
+        print()
+        student_access_report_export(driver, reportURL, targetFilePath)
+        print()
+        uploadToBox(targetFilePath, targetFileName, boxParentFolderID, boxFolderName, requestorEmailAddress)
+        print()
+    finally:
+        driver.quit()
+        print("Browser closed.")
+
+if __name__ == "__main__":
+    main()
