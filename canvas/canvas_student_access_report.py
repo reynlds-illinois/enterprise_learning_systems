@@ -28,22 +28,27 @@ canvasPass = env['cm.pass']
 boxJwtAuthFile = env['uofi.box.jwtauth.file']
 boxAuth = JWTAuth.from_settings_file(boxJwtAuthFile)
 boxClient = Client(boxAuth)
-boxParentFolderID = env['145486921579']
+boxParentFolderID = env['uofi.box.tdx.parent.folder']
 boxRequstorRole = 'Viewer'
 reportsPath = '/var/lib/canvas-mgmt/reports/'
+yesNo = ['y', 'n']
 
-tdxTicket = input('  > Enter TDX ticket         : ')
+tdxTicket = input('  > Enter TDX ticket: ')
 print()
 requestorNetID = input('  > Enter the NetID of the TDX requestor: ')
 print()
 netID = input    ("  > Enter the student's NetID: ")
+canvasUserID = canvasGetUserInfo(netID)[0]
 print()
-courseID = input ('  > Enter the Course ID      : ')
+courseID = input ('  > Enter the Course ID : ')
+canvasCourseID = findCanvasCourse(courseID)
 print()
 #
-canvasUserID = canvasGetUserInfo(netID)[0]
-canvasCourseID = findCanvasCourse(courseID)
-reportURL = f'{canvasURL}courses/{canvasCourseID}/users/{canvasUserID}/usage'
+input('  > Press Enter to continue... ')
+print()
+
+# Set up the report URL and file name
+reportURL = f'{canvasURL}/courses/{canvasCourseID}/users/{canvasUserID}/usage'
 targetFileName = f'tdx_{tdxTicket}_access_report.pdf'
 targetFilePath = f'{reportsPath}{targetFileName}'
 requestorEmailAddress = f'{requestorNetID}@illinois.edu'
