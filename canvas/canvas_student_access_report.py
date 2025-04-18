@@ -25,6 +25,9 @@ canvasURL = realm['canvasUrl']
 jwtAuthFile = env['uofi.box.jwtauth.file']
 canvasUser = env['cm.user']
 canvasPass = env['cm.pass']
+canvasAuthURL = f'{canvasURL}/login/canvas'
+print(f'canvasAuthURL: {canvasAuthURL}')
+print()
 boxJwtAuthFile = env['uofi.box.jwtauth.file']
 boxAuth = JWTAuth.from_settings_file(boxJwtAuthFile)
 boxClient = Client(boxAuth)
@@ -45,7 +48,7 @@ canvasCourseID = findCanvasCourse(courseID)
 print()
 #
 input('  > Press Enter to continue... ')
-print()
+#print()
 
 # Set up the report URL and file name
 reportURL = f'{canvasURL}/courses/{canvasCourseID}/users/{canvasUserID}/usage'
@@ -66,9 +69,9 @@ def setup_browser():
     driver.implicitly_wait(3)
     return driver
 
-def canvasLogin(driver, canvasUser, canvasPass):
+def canvasLogin(driver, canvasUser, canvasPass, canvasAuthURL):
     """Authenticate the user."""
-    driver.get("https://illinoisedu.beta.instructure.com/login/canvas")
+    driver.get(canvasAuthURL)
     usernameField = driver.find_element(By.XPATH, '//*[@id="pseudonym_session_unique_id"]')
     passwordField = driver.find_element(By.XPATH, '//*[@id="pseudonym_session_password"]')
     submitButton = driver.find_element(By.XPATH, '/html/body/div[3]/div[2]/div/div/div[1]/div/div/div/div/div/div[2]/form[1]/div[3]/div[2]/input')
@@ -81,7 +84,7 @@ def canvasLogin(driver, canvasUser, canvasPass):
     WebDriverWait(driver, 10).until(
         EC.presence_of_element_located((By.XPATH, '//*[@id="global_nav_profile_link"]'))
     )
-    print("Login successful")
+    print("  = Login successful")
 
 def student_access_report_export(driver, reportURL, targetFilePath):
     """Scroll to load JavaScript content and export the page to a PDF."""
@@ -92,8 +95,8 @@ def student_access_report_export(driver, reportURL, targetFilePath):
         WebDriverWait(driver, 5).until(
             EC.presence_of_element_located((By.XPATH, '//*[@id="content"]'))
         )
-        print("JavaScript content loaded successfully")
-        print()
+        print("  = JavaScript content loaded successfully")
+        #print()
 
         # Export the page to a PDF
         pdf_data = driver.execute_cdp_cmd("Page.printToPDF", {
@@ -108,13 +111,13 @@ def student_access_report_export(driver, reportURL, targetFilePath):
         with open(targetFilePath, "wb") as pdf_file:
             pdf_file.write(decoded_pdf_data)
         print()
-        print(f"Page exported to {targetFilePath} successfully")
+        print(f"  = Page exported to {targetFilePath} successfully")
 
     except TimeoutException:
-        print("Error: Timeout while waiting for JavaScript content to load.")
+        print("  !!! Error: Timeout while waiting for JavaScript content to load.")
         # Optionally, capture a screenshot for debugging
         driver.save_screenshot("timeout_error.png")
-        print("Screenshot saved as 'timeout_error.png'.")
+        print("  !!! Screenshot saved as 'timeout_error.png'.")
 
 def uploadToBox(targetFilePath, targetFileName, boxParentFolderID, boxFolderName, requestorEmailAddress):
     try:
@@ -142,7 +145,7 @@ def main():
     driver = setup_browser()
     try:
         print()
-        canvasLogin(driver, canvasUser, canvasPass)
+        canvasLogin(driver, canvasUser, canvasPass, canvasAuthURL)
         print()
         student_access_report_export(driver, reportURL, targetFilePath)
         print()
@@ -150,7 +153,8 @@ def main():
         print()
     finally:
         driver.quit()
-        print("Browser closed.")
+        print(">>> Browser closed <<<.")
+        print()
 
 if __name__ == "__main__":
     main()
