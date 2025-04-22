@@ -153,7 +153,10 @@ while True:
                     enrollmentNewStatus = 'completed'
                     print(f'=== Updating: {row}')
                     print()
+                    print(f'  = Student Access Report: {canvasUrl}/courses/{row[0]}/users/{canvasUserID}/usage')
+                    print()
                     canvasEnrollmentEdit(canvasApi, authHeader, row, enrollmentNewStatus)
+                    print()
                     time.sleep(sleepDelay)
         elif enrollRestoreSelection != 'q':           # SINGLE ENROLLMENT CHANGE FOR ANY ENROLLMENT TYPE
             for row in tableTemp:
