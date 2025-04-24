@@ -53,12 +53,12 @@ def canvasCreateUserToken(canvasApi, canvasUserID, reason, expiryDate, adminAuth
               'token[expires_at]':f'{expiryDate}'}
     try:
         r = requests.post(createTokenURL, params=params, headers=adminAuth)
-        return r.json().get('id')
+        return r.json()
     except Exception as E:
         print(E)
         return False
 #
-def canvasDeleteUserToken(canvasApi, userTokenInfo, authHeader):
+def canvasDeleteUserToken(canvasApi, canvasUserID, tokenHint, authHeader):
     yesNo = ''
     try:
         canvasUserID = userTokenInfo[0]
@@ -104,8 +104,12 @@ elif actionChoice == 'n':
         print()
     if yesNo == 'y':
         try:
-            r = canvasCreateUserToken(canvasApi, canvasUserID, reason, expiryDate, adminAuth)
+            newToken = canvasCreateUserToken(canvasApi, canvasUserID, reason, expiryDate, adminAuth)
             print('Successfully created token.')
+            print(f'  = NetID:       {netID}')
+            print(f'  = Reason:      {reason}')
+            print(f'  = Expiry Date: {expiryDate}')
+            print(f'    >>>>> Token: {newToken["visible_token"]}')
             print()
         except Exception as E:
             print('Token NOT successfully created.')
@@ -128,14 +132,16 @@ elif actionChoice == 'DE':
             canvasDeleteUserToken(canvasApi, userTokenInfo, authHeader)
 else:
     tokenChoice = ''
+    canvasUserID = ''
     userTokens = canvasListUserTokens(canvasApi, canvasUserTokensCSV)
     print(columnar(userTokens, columnHeader, no_borders=True))
-    while tokenChoice not in [token[2] for token in userTokens]:
-        tokenChoice = input('Enter the token HINT to delete: ')
+    while tokenChoice not in [token[2] for token in userTokens] and canvasUserID not in [token[0] for token in userTokens]:
+        canvasUserID = input('Enter the canvas user ID of the token to delete: ')
+        print()
+        tokenHint = input('Enter the token HINT to delete: ')
         print()
     for userTokenInfo in userTokens:
-        if tokenChoice == userTokenInfo[2]:
-            canvasDeleteUserToken(canvasApi, userTokenInfo, authHeader)
+        if tokenHint == userTokenInfo[2] and canvasUserID == userTokenInfo[0]:
+            canvasDeleteUserToken(canvasApi, canvasUserID, tokenHint, authHeader)
             break
-    #canvasDeleteUserToken(canvasApi, userTokenInfo, authHeader)
 print()
