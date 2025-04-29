@@ -3,7 +3,7 @@
 import sys, os, requests, urllib, json, time, datetime, smtplib
 from datetime import date
 from email.mime.text import MIMEText
-from canvasFunctions import *
+from canvasFunctions import getEnv
 objectsList = ["users", "courses", "sections"]
 #canvasTerms = ["120228"]        # Optional...can set for active terms only
 env = getEnv()

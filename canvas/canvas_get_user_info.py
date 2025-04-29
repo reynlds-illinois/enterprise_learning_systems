@@ -4,7 +4,7 @@ import sys, os, requests, pprint, urllib, json, time, datetime
 from datetime import date
 from pprint import pprint
 sys.path.append("/var/lib/canvas-mgmt/bin")
-from canvasFunctions import *
+from canvasFunctions import logScriptStart, getEnv
 env = getEnv()
 logScriptStart()
 canvasToken = env["canvas.ro-api"]
@@ -32,7 +32,7 @@ while 'next' in response.links:
 if search_results is None:
     print("User Not Found")
 else:
-    for user in paginated_search_results:
+    for user in search_results:
         #if user["login_id"] == search_term:
         print("#--------------------------------------")
         print("#  Canvas ID:",user["id"])
