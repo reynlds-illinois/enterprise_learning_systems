@@ -56,6 +56,7 @@ def canvasListUserTokens(canvasApi, canvasUserTokensCSV):
                     lastUsedDate = datetime.datetime.fromisoformat(line[4])
                     lastUsedDate = datetime.datetime.strftime(lastUsedDate, dateOnlyFormat)
                 userTokens.append([canvasUserID, canvasUser, tokenHint, expiryDate, lastUsedDate])
+    userTokens = sorted(userTokens, key=lambda x: x[1])
     return userTokens
 #
 def canvasCreateUserToken(canvasApi, canvasUserID, reason, expiryDate, adminAuth):
