@@ -1,6 +1,6 @@
 #!/usr/bin/python
 #
-import sys, csv, requests, datetime
+import os, sys, csv, requests, datetime
 from pprint import pprint
 from datetime import date
 from email.mime.text import MIMEText
@@ -9,7 +9,12 @@ from canvasFunctions import realm
 from canvasFunctions import canvasGetUserInfo
 from canvasFunctions import getDate
 from canvasFunctions import getEnv
+from canvasFunctions import logScriptStart
+from boxsdk import JWTAuth, Client
+from boxsdk.exception import BoxAPIException
+from boxsdk.object.collaboration import CollaborationRole
 from columnar import columnar
+#
 #logScriptStart()
 realm = realm()
 env = getEnv()
@@ -20,6 +25,13 @@ authHeader = {"Authorization": f"Bearer {canvasToken}"}
 serviceAccts = ['84','94','109','7016','8994','125511','129156','132703','319151','319349','336978','355105','360354','377818','378454','381230','400969','417093','420084','426543']
 columnHeader = ['canvas_id', 'canvas_user', 'hint', 'expires', 'last_used']
 userTokens = []
+tokenTempFolder = '/var/lib/canvas-mgmt/tmp'
+jwtAuthFile = env['uofi.box.jwtauth.file']
+boxJwtAuthFile = env['uofi.box.jwtauth.file']
+boxAuth = JWTAuth.from_settings_file(boxJwtAuthFile)
+boxParentFolderID = env['uofi.box.api.token.folder']
+boxClient = Client(boxAuth)
+boxRequstorRole = 'Viewer'
 loopDelay = 10
 dateOnlyFormat = '%Y-%m-%d'
 today = str(date.today().strftime('%Y-%m-%d'))
@@ -70,6 +82,27 @@ def canvasDeleteUserToken(canvasApi, canvasUserID, tokenHint, authHeader):
     except Exception as E:
         print(E)
 #
+def uploadToBox(targetFilePath, targetFileName, boxParentFolderID, boxFolderName, requestorEmailAddress):
+    try:
+        # create target folder in BOX
+        boxCreateTargetFolder = boxClient.folder(boxParentFolderID).create_subfolder(boxFolderName)
+        boxTargetFolderID = int(boxCreateTargetFolder['id'])
+        print('  = Successfully created the BOX target folder.')
+        print()
+        # upload local CSV file to new BOX target folder
+        r = boxClient.folder(boxTargetFolderID).upload(targetFilePath, targetFileName)
+        #print(r)
+        print('  = Successfully uploaded the CSV to BOX.')
+        # share new BOX target folder with TDX requestor
+        x = boxClient.folder(boxTargetFolderID).collaborate_with_login(requestorEmailAddress,CollaborationRole.VIEWER)
+        boxSharedLink = f'https://uofi.box.com/folder/{boxTargetFolderID}'
+        print()
+        print('  ==')
+        print(f'  == Folder successfully shared in BOX:  {boxSharedLink}')
+        print('  ==')
+    except Exception as e:
+        print(f'!!! Error During BOX Actions: {e}')
+#
 while actionChoice != 'l' and actionChoice != 'n' and actionChoice != 'd' and actionChoice != 'DE':
     actionChoice = input('Choose an action: (l)ist user tokens, (n)ew user token, (d)elete a user token, (DE)lete all user tokens: ')
     print()
@@ -80,6 +113,8 @@ if actionChoice == 'l':
     print()
 elif actionChoice == 'n':
     yesNo = ''
+    tdxTicket = input('Enter the TDX ticket number: ')
+    print()
     netID = input('Enter the NetID of the user that will receive the token:  ')
     print()
     #adminToken = getpass.getpass('Enter your SU admin token: ')
@@ -103,6 +138,9 @@ elif actionChoice == 'n':
         yesNo = input('>>> Continue (y/n)? ').lower().split()[0]
         print()
     if yesNo == 'y':
+        tokenTempFileName = f'{netID}_TDX-{tdxTicket}_token.txt'
+        tokenTempFile = f'{tokenTempFolder}/{tokenTempFileName}'
+        requestorEmailAddress = f'{netID}@illinois.edu'
         try:
             newToken = canvasCreateUserToken(canvasApi, canvasUserID, reason, expiryDate, adminAuth)
             print('Successfully created token.')
@@ -115,6 +153,37 @@ elif actionChoice == 'n':
             print('Token NOT successfully created.')
             print(E)
             print()
+        try:
+            with open(tokenTempFile, 'w') as localTempFile:
+                localTempFile.write(f'''NetID:  {netID}
+            Expiration:  {expiryDate}
+            Token:  {newToken["visible_token"]}
+            ''')
+            # upload local CSV file to new BOX target folder
+            r = boxClient.folder(boxParentFolderID).upload(tokenTempFile, tokenTempFileName)
+            print(r)
+            newTokenFileID = r['id']
+            print('  = Successfully uploaded the TOKEN_FILE to BOX.')
+            # share new BOX target folder with TDX requestor
+            x = boxClient.file(newTokenFileID).collaborate_with_login(requestorEmailAddress,CollaborationRole.VIEWER)
+            boxSharedLink = f'https://uofi.box.com/file/{newTokenFileID}'
+            print()
+            print('  ==')
+            print(f'  == Token File successfully shared in BOX:  {boxSharedLink}')
+            print('  ==')
+            print()
+            # delete local temp file
+            os.remove(tokenTempFile)
+        except BoxAPIException as e:
+            print(f'!!! Error During BOX Actions: {e}')
+            print()
+        except Exception as e:
+            print(f'!!! Error During BOX Actions: {e}')
+            print()
+    else:
+        print('Token NOT created.')
+        print()
+#
 elif actionChoice == 'DE':
     yesNo1 = ''
     yesNo2 = ''
