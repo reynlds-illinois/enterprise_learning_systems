@@ -147,7 +147,7 @@ elif actionChoice == 'n':
             print(f'  = NetID:       {netID}')
             print(f'  = Reason:      {reason}')
             print(f'  = Expiry Date: {expiryDate}')
-            print(f'    >>>>> Token: {newToken["visible_token"]}')
+            #print(f'    >>>>> Token: {newToken["visible_token"]}')
             print()
         except Exception as E:
             print('Token NOT successfully created.')
@@ -156,15 +156,15 @@ elif actionChoice == 'n':
         try:
             with open(tokenTempFile, 'w') as localTempFile:
                 localTempFile.write(f'''NetID:  {netID}
-            Expiration:  {expiryDate}
-            Token:  {newToken["visible_token"]}
-            ''')
+Expiration:  {expiryDate}
+Token:  {newToken["visible_token"]}
+''')
             # upload local CSV file to new BOX target folder
             r = boxClient.folder(boxParentFolderID).upload(tokenTempFile, tokenTempFileName)
             print(r)
             newTokenFileID = r['id']
             print('  = Successfully uploaded the TOKEN_FILE to BOX.')
-            # share new BOX target folder with TDX requestor
+            # share new BOX target file with TDX requestor
             x = boxClient.file(newTokenFileID).collaborate_with_login(requestorEmailAddress,CollaborationRole.VIEWER)
             boxSharedLink = f'https://uofi.box.com/file/{newTokenFileID}'
             print()
