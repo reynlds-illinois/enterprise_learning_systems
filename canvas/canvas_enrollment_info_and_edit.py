@@ -4,11 +4,7 @@ import sys, os, json, csv, requests, time, datetime
 from datetime import date, datetime, timedelta
 from columnar import columnar
 sys.path.append("/var/lib/canvas-mgmt/bin")
-from canvasFunctions import realm
-from canvasFunctions import canvasGetUserInfo
-from canvasFunctions import canvasJsonDates
-from canvasFunctions import yesOrNo
-from canvasFunctions import canvasCourseInfo
+from canvasFunctions import *
 from pprint import pprint
 print('')
 realm = realm()
@@ -30,7 +26,9 @@ def canvasEnrollmentEdit(canvasApi, authHeader, row, enrollmentNewStatus):
     courseURL = f"{canvasApi}courses/{canvasCourseID}"
     canvasCourseInfo = requests.get(f'{canvasApi}courses/{canvasCourseID}', headers=authHeader).json()
     now = datetime.now().strftime(format=dateFormat)
-    endDate = canvasCourseInfo['end_at']
+    if not canvasCourseInfo['end_at']:
+        endDate = now
+    else: endDate = canvasCourseInfo['end_at']
     if endDate < now:
         print()
         print('>>> Resetting course date for modifications <<<')
