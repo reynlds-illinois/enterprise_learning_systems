@@ -4,7 +4,11 @@ import sys, os, json, csv, requests, time, datetime
 from datetime import date, datetime, timedelta
 from columnar import columnar
 sys.path.append("/var/lib/canvas-mgmt/bin")
-from canvasFunctions import *
+from canvasFunctions import realm
+from canvasFunctions import canvasGetUserInfo
+from canvasFunctions import canvasJsonDates
+from canvasFunctions import yesOrNo
+from canvasFunctions import canvasCourseInfo
 from pprint import pprint
 print('')
 realm = realm()
