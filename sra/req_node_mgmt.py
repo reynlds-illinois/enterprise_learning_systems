@@ -27,7 +27,7 @@ envLabel = realm['envLabel']
 deptsMissingInSra = []
 addContinue = 'y'
 url = 'https://www.dmi.illinois.edu/ddd/mktext.asp'
-listHeader = ['BANNER_ORG', 'PARENT_ACCT', 'PARENT_SHORT', 'NEW_ACCT', 'DEPT_NAME', 'COLL_NAME', 'CODE_EXISTS']
+listHeader = ['BANNER_ORG', 'PARENT_ACCT', 'PARENT_SHORT', 'PARENT_ID', 'NEW_ACCT', 'DEPT_NAME', 'PARENT_NAME', 'CODE_EXISTS']
 #
 def connect2Sql(dbUser, dbPass, dbHost, dbPort, dbSid):
     """
@@ -111,6 +111,30 @@ def deptCompare(deptInfo, sraNodes):
                 notInSra.append(row)
     return notInSra
 #
+def add_node_to_database(connection, newNodeID, newCode, newShortName, deptName, parentNodeID):
+    """
+    Adds a new node to the database if codeExists = 'NO'.
+    """
+    try:
+        # Define the SQL query for the insert
+        insertQuery = text('''
+            INSERT INTO correl.T_BB9_NODE (NODE_ID, CODE, SHORT_NAME, NAME, "LEVEL", PARENT_NODE_ID)
+            VALUES (:node_id, :ncode, :short_name, :rname, :level, :parent_node_id)
+        ''')
+        # Execute the insert query
+        connection.execute(insertQuery, {
+            "node_id":newNodeID,
+            "ncode": newCode,
+            "short_name": newShortName,
+            "rname": deptName,
+            "level": "2",
+            "parent_node_id": parentNodeID
+        })
+        connection.commit()  # Commit the transaction
+        print(f"Node with CODE '{newCode}' successfully added to the database.")
+    except Exception as e:
+        print(f"Error adding node to the database: {e}")
+#
 # Establish the database connection
 connection = connect2Sql(dbUser, dbPass, dbHost, dbPort, dbSid)
 
@@ -128,6 +152,7 @@ for item in notInSRA[1:]:
     lastElement = currentAcctCode.split('-')[-1]
     parentNode = currentAcctCode.split('-')[1]
     newCode = f"{firstChar}{lastElement}"
+
     # Use a parameterized query to check if newCode exists
     newAcctCodeQuery = text("SELECT COUNT(*) FROM correl.T_BB9_NODE WHERE CODE = :new_code")
     newAcctResult = connection.execute(newAcctCodeQuery, {"new_code": newCode}).scalar()
@@ -135,10 +160,15 @@ for item in notInSRA[1:]:
         codeExists = 'YES'
     else:
         codeExists = 'NO'
+
     parentAcctQuery = text("SELECT SHORT_NAME FROM correl.T_BB9_NODE WHERE CODE = :parent_node")
     parentAcct = connection.execute(parentAcctQuery, {"parent_node": parentNode}).scalar()
-    deptsMissingInSra.append([item[1], parentNode, parentAcct, newCode, item[2], item[27], codeExists])
+    parentAcctQuery = text("SELECT NODE_ID FROM correl.T_BB9_NODE WHERE CODE = :parent_node")
+    parentNodeID = connection.execute(parentAcctQuery, {"parent_node": parentNode}).scalar()
 
+    deptsMissingInSra.append([item[1], parentNode, parentAcct, parentNodeID, newCode, item[2], item[27], codeExists])
+
+    # If codeExists = 'NO', prompt the user to add the node
 # Sort the results by the last column (CODE_EXISTS) in ascending order
 deptsMissingInSra = sorted(deptsMissingInSra, key=lambda x: x[-1])
 
@@ -146,3 +176,31 @@ deptsMissingInSra = sorted(deptsMissingInSra, key=lambda x: x[-1])
 print("These departments are in DMI data, but are NOT found in the SRA database:")
 print(columnar(deptsMissingInSra, listHeader, no_borders=True))
 print('')
+
+for item in deptsMissingInSra:
+    yesNo = ''
+    addContinue = ''
+    if item[7] == 'NO':
+        # Prompt the user to add the node to the database
+        print(columnar([item], listHeader, no_borders=True))
+        print()
+        while yesNo not in ['y', 'n']:
+            yesNo = input(f"= Do you want to add this node to the database? (y/n): ").strip().lower()
+            print()
+        if yesNo == 'y':
+            newNodeID = input(f"  = Enter NODE_ID for the new node with CODE '{item[4]}': ").strip()
+            newCode = item[4]
+            newShortName = input(f"  = Enter SHORT_NAME for the new node with CODE '{newCode}': ").strip()
+            deptName = item[5]
+            currentAcctCode = item[1]
+            deptLevel = 2
+            parentNodeID = item[3]
+            try:
+                addContinue = input(f"  > Do you want to add this node to the database? (y/n): ").strip().lower()
+            except Exception as e:
+                print(f"Error: {e}")
+                addContinue = 'n'
+            if addContinue == 'y':
+                # Call the function to add the node to the database
+                #add_node_to_database(connection, newCode, newShortName, deptName, deptLevel, parentNodeID)
+                add_node_to_database(connection, newNodeID, newCode, newShortName, deptName,parentNodeID)
