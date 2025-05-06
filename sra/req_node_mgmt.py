@@ -186,7 +186,15 @@ for item in deptsMissingInSra:
             yesNo = input(f"= Do you want to add this node to the database? (y/n): ").strip().lower()
             print()
         if yesNo == 'y':
-            newNodeID = input(f"  = Enter NODE_ID for the new node with CODE '{item[4]}': ").strip()
+            while True:
+                newNodeID = input(f"  = Enter NODE_ID for the new node with CODE '{item[4]}': ").strip()
+                print()
+                # Check if newNodeID already exists in sraAllNodes
+                if any(str(node[0]) == newNodeID for node in sraAllNodes):  # Cast node[0] to string
+                    print(f"  ! NODE_ID '{newNodeID}' already exists in the database. Please enter a unique NODE_ID.")
+                    print()
+                else:
+                    break  # Exit the loop if the newNodeID is unique
             newCode = item[4]
             newShortName = input(f"  = Enter SHORT_NAME for the new node with CODE '{newCode}': ").strip()
             deptName = item[5]
@@ -195,10 +203,12 @@ for item in deptsMissingInSra:
             parentNodeID = item[3]
             try:
                 addContinue = input(f"  > Do you want to add this node to the database? (y/n): ").strip().lower()
+                print()
             except Exception as e:
                 print(f"Error: {e}")
                 addContinue = 'n'
             if addContinue == 'y':
                 # Call the function to add the node to the database
-                #add_node_to_database(connection, newCode, newShortName, deptName, deptLevel, parentNodeID)
-                add_node_to_database(connection, newNodeID, newCode, newShortName, deptName,parentNodeID)
+                add_node_to_database(connection, newNodeID, newCode, newShortName, deptName, parentNodeID)
+                sraAllNodes = sraGetNodes(connection)
+                print()
