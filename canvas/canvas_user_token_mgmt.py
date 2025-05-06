@@ -1,6 +1,6 @@
 #!/usr/bin/python
 #
-import os, sys, csv, requests, datetime
+import os, sys, csv, requests, datetime, time
 from pprint import pprint
 from datetime import date
 from email.mime.text import MIMEText
@@ -15,7 +15,7 @@ from boxsdk.exception import BoxAPIException
 from boxsdk.object.collaboration import CollaborationRole
 from columnar import columnar
 #
-#logScriptStart()
+logScriptStart()
 realm = realm()
 env = getEnv()
 canvasToken = realm['canvasToken']
@@ -23,7 +23,7 @@ canvasApi = realm['canvasApi']
 canvasUserTokensCSV = env['canvas.user.tokens']
 authHeader = {"Authorization": f"Bearer {canvasToken}"}
 serviceAccts = ['84','94','109','7016','8994','125511','129156','132703','319151','319349','336978','355105','360354','377818','378454','381230','400969','417093','420084','426543']
-columnHeader = ['canvas_id', 'canvas_user', 'hint', 'expires', 'last_used']
+columnHeader = ['canvas_id', 'netid', 'canvas_user', 'hint', 'expires', 'last_used']
 userTokens = []
 tokenTempFolder = '/var/lib/canvas-mgmt/tmp'
 jwtAuthFile = env['uofi.box.jwtauth.file']
@@ -32,14 +32,28 @@ boxAuth = JWTAuth.from_settings_file(boxJwtAuthFile)
 boxParentFolderID = env['uofi.box.api.token.folder']
 boxClient = Client(boxAuth)
 boxRequstorRole = 'Viewer'
-loopDelay = 10
+canvasUsersFilePath = '/var/lib/canvas-mgmt/config/canvas_users.csv'
+loopDelay = 2
 dateOnlyFormat = '%Y-%m-%d'
 today = str(date.today().strftime('%Y-%m-%d'))
 actionChoice = ''
 #
-def canvasListUserTokens(canvasApi, canvasUserTokensCSV):
+def loadCanvasUsers(canvasUsersFilePath):
+    """ Loads the canvas_users.csv file into memory as a dictionary """
+    canvasUsers = []
+    with open(canvasUsersFilePath, 'r') as csvFile:
+        reader = csv.reader(csvFile)
+        for csvrow in reader:
+            canvasUsers.append(csvrow)
+    # Remove the header row from the list
+    canvasUsers.pop(0)  
+    return canvasUsers
+#
+def canvasListUserTokens(canvasUserTokensCSV, canvasAllUsers):
     ''' uses the full path of the downloaded all tokens report to genera a list of user-generated tokens '''
     userTokens = []
+    print('  ... Loading list of user-generated tokens ...')
+    print()
     with open(canvasUserTokensCSV, 'r') as file:
         allTokens = csv.reader(file)
         for line in allTokens:
@@ -55,7 +69,11 @@ def canvasListUserTokens(canvasApi, canvasUserTokensCSV):
                 else:
                     lastUsedDate = datetime.datetime.fromisoformat(line[4])
                     lastUsedDate = datetime.datetime.strftime(lastUsedDate, dateOnlyFormat)
-                userTokens.append([canvasUserID, canvasUser, tokenHint, expiryDate, lastUsedDate])
+                for row in canvasAllUsers:
+                    if canvasUserID == row[0]:
+                        netID = row[1]
+                        break
+                userTokens.append([canvasUserID, netID, canvasUser, tokenHint, expiryDate, lastUsedDate])
     userTokens = sorted(userTokens, key=lambda x: x[1])
     return userTokens
 #
@@ -72,13 +90,13 @@ def canvasCreateUserToken(canvasApi, canvasUserID, reason, expiryDate, adminAuth
         return False
 #
 def canvasDeleteUserToken(canvasApi, canvasUserID, tokenHint, authHeader):
-    yesNo = ''
+    #yesNo = ''
     try:
-        canvasUserID = userTokenInfo[0]
-        tokenHint = userTokenInfo[2]
+        #canvasUserID = userTokenInfo[0]
+        #tokenHint = userTokenInfo[2]
         deleteURL = f'{canvasApi}users/{canvasUserID}/tokens/{tokenHint}'
         requests.delete(deleteURL, headers=authHeader)
-        print(f'Successfully deleted: {userTokenInfo}')
+        print(f'Successfully deleted token {tokenHint} for user {canvasUserID}.')
         print()
     except Exception as E:
         print(E)
@@ -104,12 +122,14 @@ def uploadToBox(targetFilePath, targetFileName, boxParentFolderID, boxFolderName
     except Exception as e:
         print(f'!!! Error During BOX Actions: {e}')
 #
+canvasAllUsers = loadCanvasUsers(canvasUsersFilePath)
+#
 while actionChoice != 'l' and actionChoice != 'n' and actionChoice != 'd' and actionChoice != 'DE':
     actionChoice = input('Choose an action: (l)ist user tokens, (n)ew user token, (d)elete a user token, (DE)lete all user tokens: ')
     print()
 if actionChoice == 'l':
     #canvasAllTokensReportPath = canvasTokensReport(canvasApi, canvasObjectsPath, targetFilePath, canvasReportName, authHeader)
-    allUserTokens = canvasListUserTokens(canvasApi, canvasUserTokensCSV)
+    allUserTokens = canvasListUserTokens(canvasUserTokensCSV, canvasAllUsers)
     print(columnar(allUserTokens, columnHeader, no_borders=True))
     print()
 elif actionChoice == 'n':
@@ -188,30 +208,34 @@ Token:  {newToken["visible_token"]}
 elif actionChoice == 'DE':
     yesNo1 = ''
     yesNo2 = ''
-    userTokens = canvasListUserTokens(canvasApi, canvasUserTokensCSV)
+    userTokens = canvasListUserTokens(canvasUserTokensCSV, canvasAllUsers)
+    print(columnar(userTokens, columnHeader, no_borders=True))
     while yesNo1 != 'y' and yesNo1 != 'n':
         yesNo1 = input('Continue deletion on ALL user-generated tokens (y/n)? ').lower().strip()
         print()
     while yesNo2 != 'y' and yesNo2 != 'n':
-        yesNo2 = input('>>> Are you REALLY sure about this? ').lower().strip()
+        yesNo2 = input('>>> Are you REALLY sure about this (y/n)? ').lower().strip()
         print()
     if yesNo1 == 'y' and yesNo2 == 'y':
         print('Deleting ALL user-generated tokens...')
         print()
         for userTokenInfo in userTokens:
-            canvasDeleteUserToken(canvasApi, userTokenInfo, authHeader)
+            canvasUserID = userTokenInfo[0]
+            tokenHint = userTokenInfo[3]
+            canvasDeleteUserToken(canvasApi, canvasUserID, tokenHint, authHeader)
+            time.sleep(loopDelay)
 else:
     tokenChoice = ''
     canvasUserID = ''
-    userTokens = canvasListUserTokens(canvasApi, canvasUserTokensCSV)
+    userTokens = canvasListUserTokens(canvasUserTokensCSV, canvasAllUsers)
     print(columnar(userTokens, columnHeader, no_borders=True))
     while tokenChoice not in [token[2] for token in userTokens] and canvasUserID not in [token[0] for token in userTokens]:
         canvasUserID = input('Enter the canvas user ID of the token to delete: ')
         print()
         tokenHint = input('Enter the token HINT to delete: ')
         print()
-    for userTokenInfo in userTokens:
-        if tokenHint == userTokenInfo[2] and canvasUserID == userTokenInfo[0]:
-            canvasDeleteUserToken(canvasApi, canvasUserID, tokenHint, authHeader)
-            break
+    #for userTokenInfo in userTokens:
+    #    if tokenHint == userTokenInfo[2] and canvasUserID == userTokenInfo[0]:
+    canvasDeleteUserToken(canvasApi, canvasUserID, tokenHint, authHeader)
+    #        break
 print()
