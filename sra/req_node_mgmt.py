@@ -1,9 +1,7 @@
 #!/usr/bin/python
 #
-import cx_Oracle, sys, csv, requests
-from pprint import pprint
+import sys, csv, requests
 sys.path.append("/var/lib/canvas-mgmt/bin")
-from canvasFunctions import getEnv
 from canvasFunctions import logScriptStart
 from canvasFunctions import realm
 from columnar import columnar
@@ -13,7 +11,7 @@ from io import StringIO
 from sqlalchemy import create_engine
 from sqlalchemy import text
 #
-#logScriptStart()
+logScriptStart()
 realm = realm()
 #
 canvasApi = realm['canvasApi']
