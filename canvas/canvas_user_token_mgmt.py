@@ -2,7 +2,8 @@
 #
 import os, sys, csv, requests, datetime, time
 from pprint import pprint
-from datetime import date
+from datetime import date, timedelta
+from datetime import datetime
 from email.mime.text import MIMEText
 sys.path.append("/var/lib/canvas-mgmt/bin")
 from canvasFunctions import realm
@@ -46,7 +47,7 @@ def loadCanvasUsers(canvasUsersFilePath):
         for csvrow in reader:
             canvasUsers.append(csvrow)
     # Remove the header row from the list
-    canvasUsers.pop(0)  
+    canvasUsers.pop(0)
     return canvasUsers
 #
 def canvasListUserTokens(canvasUserTokensCSV, canvasAllUsers):
@@ -63,12 +64,12 @@ def canvasListUserTokens(canvasUserTokensCSV, canvasAllUsers):
                 tokenHint = line[2]
                 if line[3] == 'never': expiryDate = line[3]
                 else:
-                    expiryDate = datetime.datetime.fromisoformat(line[3])
-                    expiryDate = datetime.datetime.strftime(expiryDate, dateOnlyFormat)
+                    expiryDate = datetime.fromisoformat(line[3])
+                    expiryDate = datetime.strftime(expiryDate, dateOnlyFormat)
                 if line[4] == 'never': lastUsedDate = line[4]
                 else:
-                    lastUsedDate = datetime.datetime.fromisoformat(line[4])
-                    lastUsedDate = datetime.datetime.strftime(lastUsedDate, dateOnlyFormat)
+                    lastUsedDate = datetime.fromisoformat(line[4])
+                    lastUsedDate = datetime.strftime(lastUsedDate, dateOnlyFormat)
                 for row in canvasAllUsers:
                     if canvasUserID == row[0]:
                         netID = row[1]
@@ -124,8 +125,16 @@ def uploadToBox(targetFilePath, targetFileName, boxParentFolderID, boxFolderName
 #
 canvasAllUsers = loadCanvasUsers(canvasUsersFilePath)
 #
-while actionChoice != 'l' and actionChoice != 'n' and actionChoice != 'd' and actionChoice != 'DE':
-    actionChoice = input('Choose an action: (l)ist user tokens, (n)ew user token, (d)elete a user token, (DE)lete all user tokens: ')
+while actionChoice != 'N30' and actionChoice != 'NN' and actionChoice != 'P' and actionChoice != 'l' and actionChoice != 'n' and actionChoice != 'd' and actionChoice != 'DE':
+    print('Choose an action: (l)ist user tokens')
+    print('                  (n)ew user token')
+    print('                  (d)elete a specific user token')
+    print('                  (P)rompted delete of tokens one at a time')
+    print('                  (NN) delete tokens without expiry or last used dates')
+    print('                  (N30) delete unsued tokens or those used longer than 30 days ago')
+    print('                  (DELALL)lete all user tokens without prompt')
+    print()
+    actionChoice = input('                : ')
     print()
 if actionChoice == 'l':
     #canvasAllTokensReportPath = canvasTokensReport(canvasApi, canvasObjectsPath, targetFilePath, canvasReportName, authHeader)
@@ -168,7 +177,7 @@ elif actionChoice == 'n':
             print(f'  = NetID:       {netID}')
             print(f'  = Reason:      {reason}')
             print(f'  = Expiry Date: {expiryDate}')
-            #print(f'    >>>>> Token: {newToken["visible_token"]}')
+            print(f'    >>>>> Token: {newToken["visible_token"]}')
             print()
         except Exception as E:
             print('Token NOT successfully created.')
@@ -205,7 +214,7 @@ Token:  {newToken["visible_token"]}
         print('Token NOT created.')
         print()
 #
-elif actionChoice == 'DE':
+elif actionChoice == 'DELALL':
     yesNo1 = ''
     yesNo2 = ''
     userTokens = canvasListUserTokens(canvasUserTokensCSV, canvasAllUsers)
@@ -223,7 +232,52 @@ elif actionChoice == 'DE':
             canvasUserID = userTokenInfo[0]
             tokenHint = userTokenInfo[3]
             canvasDeleteUserToken(canvasApi, canvasUserID, tokenHint, authHeader)
-            time.sleep(loopDelay)
+            #time.sleep(loopDelay)
+elif actionChoice == 'P':
+    userTokens = canvasListUserTokens(canvasUserTokensCSV, canvasAllUsers)
+    print(columnar(userTokens, columnHeader, no_borders=True))
+    for userTokenInfo in userTokens:
+        yesNo = ''
+        print(userTokenInfo)
+        while yesNo not in ['y', 'n']:
+            yesNo = input('  > Delete this token (y/n)? ').lower().strip()
+        if yesNo == 'n': continue
+        else:
+            canvasUserID = userTokenInfo[0]
+            tokenHint = userTokenInfo[3]
+            canvasDeleteUserToken(canvasApi, canvasUserID, tokenHint, authHeader)
+elif actionChoice == 'NN':
+    yesNo = ''
+    while yesNo != 'y' and yesNo != 'n':
+        yesNo = input('Continue deleting all tokens with no expiry or last used date (y/n)? ').lower().strip()
+        print()
+    if yesNo == 'y':
+        userTokens = canvasListUserTokens(canvasUserTokensCSV, canvasAllUsers)
+        for userTokenInfo in userTokens:
+            if userTokenInfo[4] == 'never' and userTokenInfo[5] == 'never':
+                print(userTokenInfo)
+                canvasUserID = userTokenInfo[0]
+                tokenHint = userTokenInfo[3]
+                canvasDeleteUserToken(canvasApi, canvasUserID, tokenHint, authHeader)
+            else: continue
+elif actionChoice == 'N30':
+    yesNo = ''
+    while yesNo != 'y' and yesNo != 'n':
+        yesNo = input('Continue deleting all unused tokens, or those used greater than 30 days ago (y/n)? ').lower().strip()
+        print()
+    if yesNo == 'y':
+        userTokens = canvasListUserTokens(canvasUserTokensCSV, canvasAllUsers)
+        today = datetime.now()
+        thirtyDaysAgo = today - timedelta(days=30)
+        thirtyDaysAgo = thirtyDaysAgo.strftime('%Y-%m-%d')
+        for userTokenInfo in userTokens:
+            if userTokenInfo[5] != 'never':  # Ensure lastUsedDate is not 'never'
+                lastUsedDate = datetime.strptime(userTokenInfo[5], '%Y-%m-%d')  # Convert to datetime
+                if lastUsedDate < datetime.strptime(thirtyDaysAgo, '%Y-%m-%d'):  # Compare dates
+                    print(userTokenInfo)
+                    canvasUserID = userTokenInfo[0]
+                    tokenHint = userTokenInfo[3]
+                    canvasDeleteUserToken(canvasApi, canvasUserID, tokenHint, authHeader)
 else:
     tokenChoice = ''
     canvasUserID = ''
