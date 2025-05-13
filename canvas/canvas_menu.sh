@@ -30,6 +30,7 @@ menuText=$(cat <<'EOF'
        (=) Canvas: Move course dept/acct in Canvas and SRA
        (?) Canvas: Student Access Report (optional upload to BOX)
        (f) Class Rosters: Get Course Memberships (PROD)
+       (N) Canvas: Find New Quizzes in Course or Banner Term
 
     Canvas Course/User/Roster Management:
        (g) Canvas: Enrollment Info and Status Change (PROD/STAGE-Live)
@@ -95,6 +96,7 @@ do
         "l") executeCommand "~/bin/ad_roster_by_crn_or_space.sh" ;;
         "M") executeCommand "~/bin/cr_crn_and_space_members.sh" ;;
         "n") executeCommand "~/bin/req_user_mgr.sh" ;;
+        "N") executeCommand "~/bin/canvas_new_quizzes.sh" ;;
         "o") executeCommand "~/bin/req_space_info.sh" ;;
         "p") executeCommand "~/bin/req_space_status_change.sh" ;;
         "r") executeCommand "~/bin/req_space_crn_edit.sh" ;;
