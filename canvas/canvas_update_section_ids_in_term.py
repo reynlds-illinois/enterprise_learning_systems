@@ -74,7 +74,7 @@ for course in canvasCourses:
                         print(f"Failed to update section {uiucSectionID}: {response.status_code} - {response.text}") 
                         sectionUpdateFailed.append([uiucSectionID, updatedUiucSectionID, response.status_code, response.text])
                     #input("Press Enter to continue...")
-                    #time.sleep(1)
+                    time.sleep(1)
                 else:
                     #print(f"Skipping section {section[1]} for course {uiucCourseID} as it does not match the Banner term {bannerTerm}")
                     sectionsSkipped.append([section[0], section[1], section[2], section[3], section[5]])
