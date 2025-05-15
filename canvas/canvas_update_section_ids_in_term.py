@@ -68,11 +68,11 @@ for course in canvasCourses:
                     #print(f'sectionUpdateURL: {sectionUpdateURL}')
                     response = requests.put(sectionUpdateURL, headers=authHeader, params=sectionParams)
                     if response.status_code == 200:
-                        print(f"Updated section {canvasSectionID} with new SIS ID: {updatedUiucSectionID}")
-                        sectionsUpdated.append([canvasSectionID, updatedUiucSectionID])
+                        print(f"Updated section {uiucSectionID} with new SIS ID: {updatedUiucSectionID}")
+                        sectionsUpdated.append([uiucSectionID, updatedUiucSectionID])
                     else:
-                        print(f"Failed to update section {canvasSectionID}: {response.status_code} - {response.text}") 
-                        sectionUpdateFailed.append([canvasSectionID, updatedUiucSectionID, response.status_code, response.text])
+                        print(f"Failed to update section {uiucSectionID}: {response.status_code} - {response.text}") 
+                        sectionUpdateFailed.append([uiucSectionID, updatedUiucSectionID, response.status_code, response.text])
                     #input("Press Enter to continue...")
                     #time.sleep(1)
                 else:
@@ -87,7 +87,7 @@ if len(sectionUpdateFailed) > 0:
     if len(sectionsSkipped) > 0:
         #print(f'sectionsSkipped: {len(sectionsSkipped)}')
         print("The following sections were skipped:")
-        print(columnar(sectionsSkipped, skippedHeader, no_borders=True))
+        print(columnar(sectionsSkipped, skippedHeader))
 else:
     print("All sections updated successfully.")
     print()
