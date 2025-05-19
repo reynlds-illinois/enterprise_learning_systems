@@ -135,7 +135,7 @@ else:
     print("Invalid input. Please enter 'term' or 'course'.")
 
 # Print summary for Banner Term Lookup
-if lookupType == 'term':
+if lookupType == 't':
     print(columnar(newQuizzes, columnHeaders, no_borders=True))
     print()
     print(f'  ==> Total number of courses for Banner Term {bannerTermID}: ', len(bannerTermCourses))
