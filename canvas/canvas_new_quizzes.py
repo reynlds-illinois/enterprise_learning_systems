@@ -1,6 +1,6 @@
 #!/usr/bin/python
 #
-import sys, requests, json, csv
+import sys, requests, json, csv, time, threading
 from pprint import pprint
 sys.path.append("/var/lib/canvas-mgmt/bin")
 from canvasFunctions import realm
@@ -11,6 +11,14 @@ from columnar import columnar
 # Initialize realm
 realm = realm()
 
+def spinner():
+    spinnerCycle = ['   | ', '   / ', '   - ', '   \\ ']  # Spinner characters
+    while not stopSpinner:
+        for char in spinnerCycle:
+            sys.stdout.write(f'\r{char} Working...')  # Display spinner with message
+            sys.stdout.flush()
+            time.sleep(0.2)  # Adjust speed of spinner
+
 # Canvas API setup
 canvasQuizApi = realm['canvasQuizApi']
 canvasToken = realm['canvasToken']
@@ -18,10 +26,11 @@ columnHeaders = ['canvas_course_id', 'uiuc_course_id', 'quiz_id', 'quiz_title']
 params = {"per_page": 100}
 authHeader = {"Authorization": f"Bearer {canvasToken}"}
 lookupType = ''
+stop_spinner = False
 
 # Prompt the user for lookup type
 while lookupType not in ['t', 'c']:
-    lookupType = input("Enter 't' to search by Banner Term ID or 'c' to search by a single course: ").strip().lower()
+    lookupType = input("Search by Banner (t)erm ID or (c)ourse ID for a single course: ").strip().lower()
     print()
 
 # Initialize lists to store courses and quizzes
@@ -43,44 +52,57 @@ if lookupType == 't':
             bannerTermCourses.append(course)
 
     print(f"\nFound {len(bannerTermCourses)} courses for Banner Term ID {bannerTermID}.\n")
+    print()
+    print('Please wait while we search for New Quizzes in these courses...\n')
+    # Start spinner in a separate thread
+    stopSpinner = False
+    spinnerThread = threading.Thread(target=spinner)
+    spinnerThread.start()
 
-    # Process each course in the Banner Term
-    for course in bannerTermCourses:
-        canvasCourseID = course[0]
-        uiucCourseID = course[1]
-        url = f"{canvasQuizApi}courses/{canvasCourseID}/quizzes"
-        response = requests.get(url, headers=authHeader, params=params)
+    try:
+        # Process each course in the Banner Term
+        for course in bannerTermCourses:
+            canvasCourseID = course[0]
+            uiucCourseID = course[1]
+            url = f"{canvasQuizApi}courses/{canvasCourseID}/quizzes"
+            response = requests.get(url, headers=authHeader, params=params)
 
-        # Check if the response is valid
-        if response.status_code != 200:
-            print(f"Error: Received status code {response.status_code} for course {canvasCourseID}")
-            continue
+            # Check if the response is valid
+            if response.status_code != 200:
+                print(f"Error: Received status code {response.status_code} for course {canvasCourseID}")
+                continue
 
-        try:
-            data = response.json()  # Attempt to parse JSON
-        except json.JSONDecodeError:
-            print(f"Error: Unable to decode JSON for course {canvasCourseID}")
-            continue
+            try:
+                data = response.json()  # Attempt to parse JSON
+            except json.JSONDecodeError:
+                print(f"Error: Unable to decode JSON for course {canvasCourseID}")
+                continue
 
-        # Check if the response contains quizzes
-        searchResults = []
-        if len(data) > 0:
-            searchResults.extend(data)
-            while 'next' in response.links:
-                response = requests.get(response.links['next']['url'], headers=authHeader, params=params)
-                try:
-                    data = response.json()
-                except json.JSONDecodeError:
-                    print(f"Error: Unable to decode JSON for course {canvasCourseID} on subsequent page")
-                    break
+            # Check if the response contains quizzes
+            searchResults = []
+            if len(data) > 0:
                 searchResults.extend(data)
+                while 'next' in response.links:
+                    response = requests.get(response.links['next']['url'], headers=authHeader, params=params)
+                    try:
+                        data = response.json()
+                    except json.JSONDecodeError:
+                        print(f"Error: Unable to decode JSON for course {canvasCourseID} on subsequent page")
+                        break
+                    searchResults.extend(data)
 
-        # Check if the course has New Quizzes
-        if len(searchResults) > 0:
-            for line in searchResults:
-                newQuizzes.append([canvasCourseID, uiucCourseID, line.get("id"), line.get("title")])
-                if [canvasCourseID, uiucCourseID] not in newQuizCourses:
-                    newQuizCourses.append([canvasCourseID, uiucCourseID])
+            # Check if the course has New Quizzes
+            if len(searchResults) > 0:
+                for line in searchResults:
+                    newQuizzes.append([canvasCourseID, uiucCourseID, line.get("id"), line.get("title")])
+                    if [canvasCourseID, uiucCourseID] not in newQuizCourses:
+                        newQuizCourses.append([canvasCourseID, uiucCourseID])
+    finally:
+        # Stop the spinner
+        stopSpinner = True
+        spinnerThread.join()
+        print()
+        print('\nProcess complete!\n')
 
 elif lookupType == 'c':
     # Single Course Lookup
