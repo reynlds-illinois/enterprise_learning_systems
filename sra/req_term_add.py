@@ -70,7 +70,14 @@ with engine.connect() as connection:
             season = "Spring"
         elif activeBannerTerm[5] == '5':
             season = "Summer"
-        else: season = "Fall"
+        elif activeBannerTerm[5] == '8':
+            season = "Fall"
+        elif activeBannerTerm[5] == '7':
+            season = "Academic Year"
+        else:
+            print(f"Invalid term code {activeBannerTerm}. Exiting without changes...")
+            print('')
+            sys.exit(1)
         termName = season + " " + str(termYear)
         print(f"Enter the dates for {termName} term: ")
         print('')
