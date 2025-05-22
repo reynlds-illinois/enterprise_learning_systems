@@ -55,7 +55,7 @@ menuText=$(cat <<'EOF'
        (p) SRA: Status Change (PROD/STAGE)
        (r) SRA: CRN Add/Remove on Space (PROD/STAGE)
        (s) SRA: Space History (PROD/STAGE)
-       (t) SRA: Term Add (PROD/STAGE)
+       (t) SRA: Term Add or Edit (PROD/STAGE)
        (u) SRA: Spaces Waiting (PROD/STAGE)
 
     Systems and Maintenance:
@@ -101,7 +101,7 @@ do
         "p") executeCommand "~/bin/req_space_status_change.sh" ;;
         "r") executeCommand "~/bin/req_space_crn_edit.sh" ;;
         "s") executeCommand "~/bin/req_space_history.sh" ;;
-        "t") executeCommand "~/bin/req_term_add.sh" ;;
+        "t") executeCommand "~/bin/req_term_add_edit.sh" ;;
         "u") executeCommand "~/bin/req_space_waiting.sh" ;;
         "v") executeCommand "~/bin/canvas_sis_id_details.sh" ;;
         "w") executeCommand "~/bin/canvas_sis_uploads_info.sh" ;;
