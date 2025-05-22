@@ -45,8 +45,9 @@ engine = create_engine(connection_string)
 # Function to add a new term
 def add_term(connection):
     proceed = ''
-    print("Add a New Term")
-    activeBannerTerm = input("Enter the Banner term (e.g., 120251): ").strip()
+    print("Adding a New Term")
+    print()
+    activeBannerTerm = input("  > Enter the Banner term (e.g., 120251): ").strip()
     termYear = str(activeBannerTerm[1] + activeBannerTerm[2] + activeBannerTerm[3] + activeBannerTerm[4])
     if activeBannerTerm[5] == '0':
         season = "Winter"
@@ -59,39 +60,39 @@ def add_term(connection):
     elif activeBannerTerm[5] == '7':
         season = "Academic Year"
     else:
-        print(f"Invalid term code {activeBannerTerm}. Exiting without changes...")
+        print(f"  = Invalid term code {activeBannerTerm}. Exiting without changes...")
         print('')
         sys.exit(1)
     termName = season + " " + str(termYear)
     #print(f"Enter the dates for {termName} term: ")
     #print('')
     #
-    courseStart = parser.parse(input("Enter the Course Start (mm/dd/yy): "))
+    courseStart = parser.parse(input("  > Enter the Course Start (mm/dd/yy): "))
     courseStart = courseStart.strftime(dateFormat).upper()
-    courseEnd = parser.parse(input("Enter the Course End (mm/dd/yy): "))
+    courseEnd = parser.parse(input("  > Enter the Course End (mm/dd/yy): "))
     courseEnd = courseEnd.strftime(dateFormat).upper()
     print('')
-    rosterStart = parser.parse(input("Enter the Roster Start (mm/dd/yy): "))
+    rosterStart = parser.parse(input("  > Enter the Roster Start (mm/dd/yy): "))
     rosterStart = rosterStart.strftime(dateFormat).upper()
-    rosterEnd = parser.parse(input("Enter the Roster End (mm/dd/yy): "))
+    rosterEnd = parser.parse(input("  > Enter the Roster End (mm/dd/yy): "))
     rosterEnd = rosterEnd.strftime(dateFormat).upper()
     print('')
-    bannerStart = parser.parse(input("Enter Banner Start (mm/dd/yy): "))
+    bannerStart = parser.parse(input("  > Enter Banner Start (mm/dd/yy): "))
     bannerStart = bannerStart.strftime(dateFormat).upper()
-    bannerEnd = parser.parse(input("Enter the Banner End (mm/dd/yy): "))
+    bannerEnd = parser.parse(input("  > Enter the Banner End (mm/dd/yy): "))
     bannerEnd = bannerEnd.strftime(dateFormat).upper()
     print('')
     while proceed != 'y' and proceed != 'n':
         print('')
-        print("| ========= NEW TERM SUMMARY =========")
-        print(f"| Banner Term ID: {activeBannerTerm}")
-        print(f"| Term Name:      {termName}")
-        print(f"| Course Dates:   {courseStart} to {courseEnd}")
-        print(f"| Roster Dates:   {rosterStart} to {rosterEnd}")
-        print(f"| Banner Dates:   {bannerStart} to {bannerEnd}")
-        print("| ====================================")
+        print("  | ========= NEW TERM SUMMARY =========")
+        print(f"  | Banner Term ID: {activeBannerTerm}")
+        print(f"  | Term Name:      {termName}")
+        print(f"  | Course Dates:   {courseStart} to {courseEnd}")
+        print(f"  | Roster Dates:   {rosterStart} to {rosterEnd}")
+        print(f"  | Banner Dates:   {bannerStart} to {bannerEnd}")
+        print("  | ====================================")
         print("")
-        proceed = input("Proceed (y/n)? ").strip()[0]
+        proceed = input("  ### Proceed (y/n)? ").strip()[0]
     if proceed == 'y':
         try:
             print('')
@@ -102,7 +103,7 @@ def add_term(connection):
             print(f"> Term {activeBannerTerm} successfully created.")
             print('')
         except Exception as E:
-            print(f"Error: {E}")
+            print(f"> Error: {E}")
             print()
         try:
             viewSql = f"""SELECT TERM_ID FROM CORREL.T_TERM WHERE BANNER_TERM LIKE '{activeBannerTerm}'"""
@@ -112,7 +113,7 @@ def add_term(connection):
             print(f"> Term ID (primary key) generated: {activeTermID}")
             print('')
         except:
-            input(f"Could not extract new Term ID.")
+            input(f"> Could not extract new Term ID.")
         try:
             bannerStartDateSql = f"""insert into CORREL.T_TERM_SCHEDULE(TERM_ID, EVENT_ID, \"DATE\") values({activeTermID}, 441, '{bannerStart}')"""
             print(f"> Setting Banner Start Date: {bannerStart}")
@@ -135,10 +136,10 @@ def add_term(connection):
             print(f"> Committing Changes ")
             print('')
             connection.execute(text("COMMIT"))
-            print(f"Term insert for Banner Term {activeBannerTerm} was successful.")
+            print(f">>> Term insert for Banner Term {activeBannerTerm} was successful. <<<")
             print('')
         except:
-            print(f"Term insert for Banner Term {activeBannerTerm} FAILED!!!")
+            print(f"### Term insert for Banner Term {activeBannerTerm} FAILED!!! ###")
             print('')
     else:
         print("Exiting without changes...")
@@ -149,13 +150,13 @@ def add_term(connection):
 def edit_term(connection):
     choice = ''
     print("Edit an Existing Term")
-    bannerTerm = input("Enter Banner term to edit: ").strip()
+    bannerTerm = input("  > Enter Banner term to edit: ").strip()
 
     # Fetch term ID
     termIDSql = text("SELECT * FROM CORREL.T_TERM WHERE BANNER_TERM = :bannerTerm")
     result = connection.execute(termIDSql, {"bannerTerm": bannerTerm}).fetchall()
     if not result:
-        print(f"No term found for Banner term '{bannerTerm}'.")
+        print(f"  # No term found for Banner term '{bannerTerm}'.")
         return
     termID = result[0][0]
 
@@ -164,8 +165,8 @@ def edit_term(connection):
     termDates = connection.execute(datesSql, {"termID": termID}).fetchall()
     sleep(1)
 
-    print(f"|================ {bannerTerm} ================")
-    print("| ID      DATE          STATUS")
+    print(f"  |================ {bannerTerm} ================")
+    print("  | ID      DATE          STATUS")
     for item in termDates:
         termDateIDs.append(item[0])
         if item[2] == 441: dateStatus = 'Banner Start Date'
@@ -175,29 +176,29 @@ def edit_term(connection):
         elif item[2] == 445: dateStatus = 'Roster Start Date'
         else: dateStatus = 'Roster End Date'
         newTermDates.append([item[0], item[1], item[2], item[3], dateStatus])
-        print(f"| {item[0]}     {item[3].strftime(dateFormat).upper()}  <  {dateStatus}")
-    print("|=========================================")
+        print(f"  | {item[0]}     {item[3].strftime(dateFormat).upper()}  <  {dateStatus}")
+    print("  |=========================================")
     print('')
 
     # Prompt for date ID to update
     while choice not in termDateIDs:
-        choice = int(input("Please enter the date ID to update: "))
+        choice = int(input("  > Please enter the date ID to update: "))
     print('')
 
     for line in newTermDates:
         if line[0] == choice:
             oldDate = str(line[3].strftime(dateFormat).upper())
-            newDate = input(f"Please enter the new {line[4]} (mm/dd/yy): ").strip()
+            newDate = input(f"  > Please enter the new {line[4]} (mm/dd/yy): ").strip()
             newDate = datetime.strptime(newDate, "%m/%d/%y").strftime(dateFormat).upper()
             print('')
             yesNo = ''
             while yesNo not in ['y', 'n']:
-                yesNo = input(f"Proceed to change {line[4]} from {oldDate} to {newDate} (y/n)? ").lower()
+                yesNo = input(f"  # Proceed to change {line[4]} from {oldDate} to {newDate} (y/n)? ").lower()
             if yesNo == 'n':
-                print("Exiting without changes...")
+                print("  # Exiting without changes...")
                 break
             else:
-                print("Applying requested update...")
+                print("  # Applying requested update...")
                 dateSql = text("UPDATE CORREL.T_TERM_SCHEDULE SET \"DATE\" = :newDate WHERE ID = :choice")
                 connection.execute(dateSql, {"newDate": newDate, "choice": choice})
                 connection.execute(text("COMMIT"))
@@ -207,8 +208,8 @@ def edit_term(connection):
                 termDates = connection.execute(datesSql, {"termID": termID}).fetchall()
                 sleep(1)
                 print('')
-                print(f"|========= UPDATED INFO FOR {bannerTerm} ==========")
-                print("| ID      DATE          STATUS")
+                print(f"  |========= UPDATED INFO FOR {bannerTerm} ==========")
+                print("  | ID      DATE          STATUS")
                 for item in termDates:
                     if item[2] == 441: dateStatus = 'Banner Start Date'
                     elif item[2] == 442: dateStatus = 'Banner End Date'
@@ -216,22 +217,19 @@ def edit_term(connection):
                     elif item[2] == 444: dateStatus = 'Course End Date'
                     elif item[2] == 445: dateStatus = 'Roster Start Date'
                     else: dateStatus = 'Roster End Date'
-                    print(f"| {item[0]}     {item[3].strftime(dateFormat).upper()}  <  {dateStatus}")
-                print("|==========================================")
+                    print(f"  | {item[0]}     {item[3].strftime(dateFormat).upper()}  <  {dateStatus}")
+                print("  |==========================================")
                 print('')
-
+#
 # Main function
 def main():
     with engine.connect() as connection:
-        print("1. Add a New Term")
-        print("2. Edit an Existing Term")
-        action = input("Enter your choice (1 or 2): ").strip()
-        if action == '1':
-            add_term(connection)
-        elif action == '2':
-            edit_term(connection)
-        else:
-            print("Invalid choice. Exiting.")
-
+        print()
+        action = input("Choose one:  (a)dd or (e)dit a term").lower().strip()
+        if action == 'a': add_term(connection)
+        elif action == 'e': edit_term(connection)
+        else: print("Invalid choice. Exiting...")
+        print()
+#
 if __name__ == "__main__":
     main()
