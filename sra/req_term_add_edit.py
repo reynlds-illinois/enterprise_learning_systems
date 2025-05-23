@@ -64,6 +64,9 @@ def add_term(connection):
         print('')
         sys.exit(1)
     termName = season + " " + str(termYear)
+    print()
+    print(f"  ### Adding {termName} term")
+    print()
     #print(f"Enter the dates for {termName} term: ")
     #print('')
     #
@@ -225,7 +228,8 @@ def edit_term(connection):
 def main():
     with engine.connect() as connection:
         print()
-        action = input("Choose one:  (a)dd or (e)dit a term").lower().strip()
+        action = input("Choose one:  (a)dd or (e)dit a term: ").lower().strip()
+        print()
         if action == 'a': add_term(connection)
         elif action == 'e': edit_term(connection)
         else: print("Invalid choice. Exiting...")
