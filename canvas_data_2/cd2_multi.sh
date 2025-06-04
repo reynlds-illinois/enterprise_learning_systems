@@ -11,7 +11,7 @@ if [[ $# -ne 3 ]]; then
 fi
 
 # Validate THREADS argument
-if ! [[ $1 =~ ^[1-20]$|^10$ ]]; then
+if ! [[ $1 =~ ^([1-9]|1[0-9]|20)$ ]]; then
     echo '' >&2
     echo '  >>> A valid number of THREADS is required:  1 to 20' >&2
     echo '' >&2
@@ -44,7 +44,8 @@ source /var/lib/canvas-mgmt/python312-venv/bin/activate
 DEV_DB_CONN=$(grep "cd2.pg.db.dev" < /var/lib/canvas-mgmt/config/environment_dot.conf)
 DEV_DB_CONN="$(cut -d'=' -f2 <<< $DEV_DB_CONN)"
 today=$(date +%F)
-cd2LogLocation="/var/lib/canvas-mgmt/logs/cd2/"
+cd2LogLocation="/var/lib/canvas-mgmt/logs/cd2/$today/"
+mkdir -p "$cd2LogLocation"  # Create the directory if it doesn't exist
 now=$today" "$(date +%T)
 
 # Define the CD2 function
@@ -53,10 +54,19 @@ CD2() {
     eval "local part_array=(\"\${${part_array_name}[@]}\")"  # Dereference the array
     for item in "${part_array[@]}"; do
         now=$(date +%F" "%T)
-        cd2LogFile="${cd2LogLocation}${today}_${item}_syncdb.log"
-        cd2ErrorFile="${cd2LogLocation}${today}_${item}_syncdb_error.log"
-        echo "$now - Processing table: $item" | tee -a "$cd2LogFile"
-        dap --loglevel "$LOG_LEVEL" "$ACTION" --connection-string "$DEV_DB_CONN" --namespace canvas --table "$item" >> "$cd2LogFile" 2>> "$cd2ErrorFile"
+        cd2LogFile="${cd2LogLocation}${item}_syncdb.log"
+        echo "$now - $item - STARTING" | tee -a "$cd2LogFile"
+        
+        # Run the dap command and log output
+        dap --loglevel "$LOG_LEVEL" "$ACTION" --connection-string "$DEV_DB_CONN" --namespace canvas --table "$item" >> "$cd2LogFile" 2>&1
+        
+        # Check for errors in the log file
+        if grep -q 'Error\|ERROR' "$cd2LogFile"; then
+            cd2ErrorFile="${cd2LogLocation}${item}_syncdb_error.log"
+            grep 'Error\|ERROR' "$cd2LogFile" > "$cd2ErrorFile"
+        fi
+        now=$(date +%F" "%T)
+        echo "$now - $item - COMPLETE" | tee -a "$cd2LogFile"
     done
 }
 
@@ -85,5 +95,22 @@ for ((i = 0; i < THREADS; i++)); do
 done
 
 wait  # Wait for all threads to complete
+
+# Combine all error logs into a single file
+errors_combined="${cd2LogLocation}errors_combined.log"
+> "$errors_combined"  # Create or clear the combined error file
+
+for error_file in "${cd2LogLocation}"*_syncdb_error.log; do
+    if [[ -f "$error_file" ]]; then
+        cat "$error_file" >> "$errors_combined"
+    fi
+done
+
+# Send email based on the presence of errors
+if [[ -s "$errors_combined" ]]; then
+    mail -s "${today}_CD2_${ACTION}_ERRORS" reynlds@illinois.edu < "$errors_combined"
+else
+    echo "${today}_CD2_${ACTION}_PASS" | mail -s "${today}_CD2_${ACTION}_PASS" reynlds@illinois.edu
+fi
 
 echo $"=== $(date)"
