@@ -1,4 +1,19 @@
 #---------------------------------------------------------
+# Read a CSV file and return a list of lists
+#---------------------------------------------------------
+
+def csv2List(filepath):
+    '''Read a CSV file and return a list of lists.'''
+    import csv, os, sys
+    data = []
+    with open(filepath, mode="r", newline="", encoding="utf-8") as csvFile:
+        reader = csv.reader(csvFile)
+        for row in reader:
+            data.append(row)
+    return data
+
+
+#---------------------------------------------------------
 # Pagination handling for Canvas API
 #---------------------------------------------------------
 
