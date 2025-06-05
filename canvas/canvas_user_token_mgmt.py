@@ -81,7 +81,7 @@ def canvasListUserTokens(canvasUserTokensCSV, canvasAllUsers):
 def canvasCreateUserToken(canvasApi, canvasUserID, reason, expiryDate, adminAuth):
     ''' create a user token for someone '''
     createTokenURL = f'{canvasApi}users/{canvasUserID}/tokens'
-    params = {'token[purpose]':f'{reason}',
+    params = {'token[purpose]':f'> {reason}',
               'token[expires_at]':f'{expiryDate}'}
     try:
         r = requests.post(createTokenURL, params=params, headers=adminAuth)
