@@ -278,6 +278,11 @@ elif actionChoice == 'N30':
                     canvasUserID = userTokenInfo[0]
                     tokenHint = userTokenInfo[3]
                     canvasDeleteUserToken(canvasApi, canvasUserID, tokenHint, authHeader)
+            elif userTokenInfo[5] == 'never':
+                print(userTokenInfo)
+                canvasUserID = userTokenInfo[0]
+                tokenHint = userTokenInfo[3]
+                canvasDeleteUserToken(canvasApi, canvasUserID, tokenHint, authHeader)
 else:
     tokenChoice = ''
     canvasUserID = ''
