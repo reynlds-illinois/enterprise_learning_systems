@@ -90,5 +90,8 @@ for item in courseAudit['events']:
         courseEventsTable.append([createdAt, courseID, eventSource, eventType, userTemp, eventData])
 
 # Print course events table
-print(columnar(courseEventsTable, courseEventsHeader))
+if len(courseEventsTable) > 0:
+    print(columnar(courseEventsTable, courseEventsHeader))
+else:
+    print(f'>>> No audit info recorded for {uiucCourseID}.')
 print()
