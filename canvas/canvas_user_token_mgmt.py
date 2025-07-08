@@ -123,6 +123,11 @@ def uploadToBox(targetFilePath, targetFileName, boxParentFolderID, boxFolderName
     except Exception as e:
         print(f'!!! Error During BOX Actions: {e}')
 #
+def generateExpiryDate():
+    """Generates a date one year from today formatted as YYYY-MM-DD."""
+    oneYearFromToday = datetime.now() + timedelta(days=365)
+    return oneYearFromToday.strftime('%Y-%m-%d')
+#
 canvasAllUsers = loadCanvasUsers(canvasUsersFilePath)
 #
 while actionChoice != 'N30' and actionChoice != 'NN' and actionChoice != 'P' and actionChoice != 'l' and actionChoice != 'n' and actionChoice != 'd' and actionChoice != 'DE':
@@ -156,7 +161,7 @@ elif actionChoice == 'n':
     print()
     reason = input('Enter a short reason for this request: ')
     print()
-    expiryDate = getDate()
+    expiryDate = generateExpiryDate()
     print()
     while yesNo != 'y' and yesNo != 'n':
         print('  ===== Summary of Changes =====')
