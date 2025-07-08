@@ -40,6 +40,7 @@ menuText=$(cat <<'EOF'
        (@) Canvas: Move Registrar-enabled Course (also affects SRA placement)
        (#) Canvas: Add Enrollment to Closed Course
        (Z) Canvas: Export Course as Zip, Qti or CC
+       (T) Canvas: User Token Management for API
 
     Canvas Data 2:
        (j) CD2: Postgres Query
@@ -91,6 +92,7 @@ do
         "@") executeCommand "~/bin/canvas_sra_move_course.sh" ;;
         "#") executeCommand "~/bin/canvas_add_enrollment_to_closed_course.sh" ;;
         "Z") executeCommand "~/bin/canvas_export_course.sh" ;;
+        "T") executeCommand "~/bin/canvas_user_token_mgmt.sh" ;;
         "j") executeCommand "~/bin/cd2_query_db.sh" ;;
         "k") executeCommand "~/bin/ad_user_info.sh" ;;
         "l") executeCommand "~/bin/ad_roster_by_crn_or_space.sh" ;;
