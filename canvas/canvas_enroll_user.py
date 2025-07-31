@@ -97,7 +97,7 @@ while True:
             # enroll user as teacher in course
             print(f'enrollParams: {enrollParams}')
             r = requests.post(enrollURL, headers=authHeader, params=enrollParams)
-            print(r.text)
+            #print(r.text)
             print(f"> Successfully enrolled {newRole} in course.")
             time.sleep(sleepDelay)
             print()
