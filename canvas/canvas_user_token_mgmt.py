@@ -75,7 +75,16 @@ def canvasListUserTokens(canvasUserTokensCSV, canvasAllUsers):
                         netID = row[1]
                         break
                 userTokens.append([canvasUserID, netID, canvasUser, tokenHint, expiryDate, lastUsedDate])
-    userTokens = sorted(userTokens, key=lambda x: x[1])
+    # Remove duplicates from userTokens (keep first occurrence)
+    seen = set()
+    uniqueUserTokens = []
+    for token in userTokens:
+        # Use (canvasUserID, tokenHint) as unique key
+        key = (token[0], token[3])
+        if key not in seen:
+            uniqueUserTokens.append(token)
+            seen.add(key)
+    userTokens = sorted(uniqueUserTokens, key=lambda x: x[1])
     return userTokens
 #
 def canvasCreateUserToken(canvasApi, canvasUserID, reason, expiryDate, adminAuth):
