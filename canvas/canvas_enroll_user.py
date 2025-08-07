@@ -39,11 +39,19 @@ while True:
         enrollURL = f"{canvasApi}courses/{canvasCourseID}/enrollments"
     elif newRole == 's':
         newRole = "StudentEnrollment"
-        sectionID = input("Enter the Section ID of the target course: ")
-        canvasSectionID = findCanvasSection(sectionID)
-        enrollURL = f"{canvasApi}sections/{canvasSectionID}/enrollments"
-        print(f'canvasSectionID: {canvasSectionID}')
-        print(f'enrollURL: {enrollURL}')
+        studentEnrollmentChoice = ''
+        while studentEnrollmentChoice != 'c' and studentEnrollmentChoice != 's':
+            studentEnrollmentChoice = input("  > Enroll student in a (c)ourse or (s)ection: ").lower()[0]
+            print()
+        if studentEnrollmentChoice == 'c':
+            sectionID = 'n/a'
+            enrollURL = f"{canvasApi}courses/{canvasCourseID}/enrollments"
+        else:
+            sectionID = input("  > Enter the UIUC section ID of the target course: ")
+            canvasSectionID = findCanvasSection(sectionID)
+            enrollURL = f"{canvasApi}sections/{canvasSectionID}/enrollments"
+        #print(f'canvasSectionID: {canvasSectionID}')
+        #print(f'enrollURL: {enrollURL}')
     else:
         newRole = "TaEnrollment"
         sectionID = 'n/a'
