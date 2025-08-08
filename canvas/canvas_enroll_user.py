@@ -8,6 +8,7 @@ from canvasFunctions import realm
 from canvasFunctions import canvasGetUserInfo
 from canvasFunctions import findCanvasCourse
 from canvasFunctions import findCanvasSection
+from canvasFunctions import findCanvasSections
 #
 realm = realm()
 #
@@ -38,20 +39,27 @@ while True:
         sectionID = 'n/a'
         enrollURL = f"{canvasApi}courses/{canvasCourseID}/enrollments"
     elif newRole == 's':
+        courseSections = findCanvasSections(uiucCourseID)
+        courseSectionsList = []
         newRole = "StudentEnrollment"
-        studentEnrollmentChoice = ''
-        while studentEnrollmentChoice != 'c' and studentEnrollmentChoice != 's':
-            studentEnrollmentChoice = input("  > Enroll student in a (c)ourse or (s)ection: ").lower()[0]
+        sectionID = ''
+        print("# Course Sections")
+        for section in courseSections:
+            courseSectionsList.append(section[0])
+            if not section[1]:
+                sectionSISID = '##### BASE COURSE SHELL #####'
+            else:
+                sectionSISID = section[1]
+            canvasSectionID = section[0]
+            sectionName = section[5]
+            print(f"  #   - Section ID: {canvasSectionID} <<<")
+            print(f"  #     Section SIS ID: {sectionSISID}")
+            print(f"  #     Section Name: {sectionName}")
             print()
-        if studentEnrollmentChoice == 'c':
-            sectionID = 'n/a'
-            enrollURL = f"{canvasApi}courses/{canvasCourseID}/enrollments"
-        else:
-            sectionID = input("  > Enter the UIUC section ID of the target course: ")
-            canvasSectionID = findCanvasSection(sectionID)
-            enrollURL = f"{canvasApi}sections/{canvasSectionID}/enrollments"
-        #print(f'canvasSectionID: {canvasSectionID}')
-        #print(f'enrollURL: {enrollURL}')
+        while sectionID not in courseSectionsList:
+            sectionID = input("  > Enter the Section ID of the target course: ")
+            #canvasSectionID = findCanvasSection(sectionID)
+            enrollURL = f"{canvasApi}sections/{sectionID}/enrollments"
     else:
         newRole = "TaEnrollment"
         sectionID = 'n/a'
@@ -72,6 +80,7 @@ while True:
     print(f"| Section ID:  {sectionID}")
     print(f"| Course Name: {canvasCourseName}")
     print(f"| End Date:    {canvasCourseInfo['end_at']}")
+    print(f"| Enroll URL:  {enrollURL}")
     print("|")
     print("| ========================")
     print()
@@ -120,7 +129,7 @@ while True:
                 print("> Course date successfully set back to original.")
                 print()
                 time.sleep(sleepDelay)
-            print(f">>> Share this URL with the requestor:  {realm['canvasUrl']}/courses/{canvasCourseID}")
+            print(f">>> Canvas course URL:  {realm['canvasUrl']}/courses/{canvasCourseID}")
             print()
         except Exception as e:
             print(f"> Error: {e}")
