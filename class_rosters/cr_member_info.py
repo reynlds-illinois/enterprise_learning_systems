@@ -26,38 +26,46 @@ crns = []
 #
 ldapConn = bind2Ldap(ldapHost, ldapBindDn, ldapBindPw)
 cursor = connect2Sql(dbUser, dbPass, dbHost, dbPort, dbSid)
-print('')
-spaceID = input('Enter space ID: ')
-#
-crnQuery = f"""SELECT SRR.ROSTER_DATA_SOURCE_KEY CRN,
-       SRR.ROSTER_DATA_SOURCE_KEY CRN,
-       ADR.RUBRIC,
-       ADR.COURSE_NUMBER,
-       ADR.SECTION,
-       ADR.TERM_CODE TERM
-FROM CORREL.T_SPACE_ROSTER SRR
-  LEFT JOIN CORREL.T_AD_ROSTER ADR on(SRR.ROSTER_DATA_SOURCE_KEY = ADR.CRN and SRR.TERM_CODE = ADR.TERM_CODE)
-WHERE SRR.SPACE_ID = {spaceID}"""
-#
-cursor.execute(crnQuery)
-crnInfo = cursor.fetchall()
-#
-for item in range(0, len(crnInfo)):
-    crns.append(crnInfo[item][0])
-termcode = crnInfo[0][5]
-#
-r = batchLookupReg(crHost, crXapikey, termcode, crns)
-print('')
-for c in r:
-    print(f"CRN: {c} - term: {termcode}")
-    for l in (r[c]):
-        print('    ', l)
-        for uin in r[c][l]:
-            adFilter = '(&(objectclass=user)(uiucEduUIN=' + uin  + '))'
-            bitBkt = ldapConn.search(search_base=ldapSearchBase, search_filter=adFilter,
-                attributes = ['sAMAccountName', 'displayName', 'uiucEduUIN'], size_limit=0)
-            temp = json.loads(ldapConn.response_to_json())
-            netId = temp['entries'][0]['attributes']['sAMAccountName']
-            displayName = temp['entries'][0]['attributes']['displayName']
-            print('        ', netId, '-', displayName)
-print('')
+while True:
+    print()
+    answer = ''
+    spaceID = input('Enter numeric space ID: ')
+    #
+    crnQuery = f"""SELECT SRR.ROSTER_DATA_SOURCE_KEY CRN,
+        SRR.ROSTER_DATA_SOURCE_KEY CRN,
+        ADR.RUBRIC,
+        ADR.COURSE_NUMBER,
+        ADR.SECTION,
+        ADR.TERM_CODE TERM
+    FROM CORREL.T_SPACE_ROSTER SRR
+    LEFT JOIN CORREL.T_AD_ROSTER ADR on(SRR.ROSTER_DATA_SOURCE_KEY = ADR.CRN and SRR.TERM_CODE = ADR.TERM_CODE)
+    WHERE SRR.SPACE_ID = {spaceID}"""
+    #
+    cursor.execute(crnQuery)
+    crnInfo = cursor.fetchall()
+    #
+    for item in range(0, len(crnInfo)):
+        crns.append(crnInfo[item][0])
+    termcode = crnInfo[0][5]
+    #
+    r = batchLookupReg(crHost, crXapikey, termcode, crns)
+    print('')
+    for c in r:
+        print(f"CRN: {c} - term: {termcode}")
+        for l in (r[c]):
+            print('    ', l)
+            for uin in r[c][l]:
+                adFilter = '(&(objectclass=user)(uiucEduUIN=' + uin  + '))'
+                bitBkt = ldapConn.search(search_base=ldapSearchBase, search_filter=adFilter,
+                    attributes = ['sAMAccountName', 'displayName', 'uiucEduUIN'], size_limit=0)
+                temp = json.loads(ldapConn.response_to_json())
+                netId = temp['entries'][0]['attributes']['sAMAccountName']
+                displayName = temp['entries'][0]['attributes']['displayName']
+                print('        ', netId, '-', displayName)
+    print('')
+    answer = input("Continue with another space (y/n)? ").strip().lower()
+    if answer != 'y':
+        print()
+        print('Exiting...')
+        break
+print()
