@@ -51,19 +51,22 @@ if 'events' not in courseAudit or 'linked' not in courseAudit:
 
 # Define event types and table headers
 eventTypes = ['concluded', 'created', 'copied_from', 'published', 'updated']
-courseEventsHeader = ['TIMESTAMP', 'COURSE_ID', 'EVENT_SRC', 'EVENT_TYPE', 'SOURCE_COURSE', 'INITIATOR', 'DETAILS']
+courseEventsHeader = ['TIMESTAMP', 'COURSE_ID', 'EVENT_SRC', 'EVENT_TYPE', 'SOURCE_COURSE', 'TARGET_COURSE', 'INITIATOR', 'DETAILS']
 
 courseEventsTable = []
+print('Parsing events...please wait...')
 
 # Process course events
 for item in courseAudit['events']:
-    print('Parsing events...please wait...')
     createdAt = convertDate(item['created_at'])
     eventSource = item['event_source']
     eventType = item['event_type']
     if eventType == 'copied_from':
         sourceCourseTemp = canvasCourseInfo(item['links']['copied_from'], canvasAPI, canvasAuth)['sis_course_id']
     else: sourceCourseTemp = 'n/a'
+    if eventType == 'copied_to':
+        targetCourseTemp = canvasCourseInfo(item['links']['copied_to'], canvasAPI, canvasAuth)['sis_course_id']
+    else: targetCourseTemp = 'n/a'
     if item['links']['course']:
         courseTemp = canvasCourseInfo(item['links']['course'], canvasAPI, canvasAuth)['sis_course_id']
     else: courseTemp = 'n/a'
@@ -75,7 +78,7 @@ for item in courseAudit['events']:
         eventData = '\n'.join([f'{k}: {v}' for k, v in eventData.items()])
     else: eventData = 'n/a'
     # Append event to table
-    courseEventsTable.append([createdAt, courseTemp, eventSource, eventType, sourceCourseTemp, userTemp, eventData])
+    courseEventsTable.append([createdAt, courseTemp, eventSource, eventType, sourceCourseTemp, targetCourseTemp,userTemp, eventData])
 
 # Print course events table
 if len(courseEventsTable) > 0:
