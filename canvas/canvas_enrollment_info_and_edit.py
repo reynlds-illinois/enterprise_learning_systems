@@ -136,6 +136,8 @@ while True:
                 tableTemp.append([row['course_id'], str(row['id']), row['sis_user_id'], row['sis_course_id'], row["sis_section_id"], int(row["course_section_id"]), row['role'], row['enrollment_state']])
                 canvasEnrollIDs.append(str(row['id']))
             else: continue
+        # Sort tableTemp by the 4th column (sis_course_id) ascending
+        tableTemp.sort(key=lambda x: x[3])
         table = columnar(tableTemp, columnHeaders, no_borders=True)
         #
         print(table)
