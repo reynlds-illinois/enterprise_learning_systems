@@ -10,17 +10,24 @@ from canvasFunctions import realm
 #
 env = getEnv()
 #
+# this will be the Canvas API base URL
 canvasAPI = 'https://illinoisedu.beta.instructure.com/api/v1'
+# this is a user token with sufficient privileges to manage course enrollments
 canvasToken = env['canvas.token']
+# this is a mashup for use with requests library headers
 canvasAuth = {"Authorization": f"Bearer {canvasToken}"}
+# this is the LDAP host (can be FQDN or IP address)
 ldapHost = env['UofI.ldap.ad_sys']
+# this is the LDAP bind user distinguished name
 ldapBindDn = env['UofI.ad_bind']
+# this is the LDAP bind user password
 ldapBindPw = env['UofI.ad_bindpwd']
-canvasCourseID = '41549'
-enrollmentHeader = ['NetID', 'Status', 'Enrollment_ID']
-canvasEnrollmentChanges = []
+# this is the numeric Canvas course ID
+canvasCourseID = '8'
+# this is the distinguished name of the source AD group
 userGroupDN = 'CN=canvas-mgr,OU=groups,OU=CANVAS,OU=CITES-Services,OU=CITES,OU=Urbana,DC=ad,DC=uillinois,DC=edu'
-proceed = ''
+# this is the enrollment changes summary table header
+enrollmentHeader = ['NetID', 'Status', 'Enrollment_ID']
 #
 def bind2Ldap(ldapHost, ldapBindDn, ldapBindPw):
     try:
@@ -57,23 +64,22 @@ def canvasGetAllEnrollmentsInCourse(canvasAPI, canvasAuth, canvasCourseID):
         params = {}  # Only needed for first request
     return enrollments
 #
+# this is the LDAP connection object
 ldapConn = bind2Ldap(ldapHost, ldapBindDn, ldapBindPw)
 #
+# this is a list of the members in the AD group
 ADresponse = getADGroupMembers(ldapConn, userGroupDN)
-#print('=== ADresponse ===')
-#pprint(ADresponse)
-#print()
+# this is a list of the existing enrollments in the Canvas course
 CanvasResponse = canvasGetAllEnrollmentsInCourse(canvasAPI, canvasAuth, canvasCourseID)
-#print('=== CanvasResponse ===')
-#pprint(CanvasResponse)
-#print()
 #
 if len(ADresponse) > 0:
     adGroupMembers = []
     for user in ADresponse:
         adGroupMembers.append(user.split(',')[0].replace('CN=', ''))
-        #print(user.split(',')[0].replace('CN=', ''))
-else: print("No users found in this AD group...")
+else:
+    print("No users found in this AD group...")
+    sys.exit()
+#
 print()
 if len(CanvasResponse) > 0:
     canvasCourseEnrollees = []
@@ -83,9 +89,12 @@ if len(CanvasResponse) > 0:
             canvasCourseEnrollees.append([enrollment['user']['sis_user_id'], enrollment['id']])
             #print(r['user']['sis_user_id'])
 #
+# setting a few variables
+proceed = ''
 addEnrollments = []
 dropEnrollments = []
 canvasEnrollmentChanges = []
+# comparing AD group members with existing Canvas course enrollments to determine new enrollments
 for netID in adGroupMembers:
     #print(netID)
     if any(netID  == sublist[0] for sublist in canvasCourseEnrollees):
@@ -93,6 +102,7 @@ for netID in adGroupMembers:
     if not any(netID  == sublist[0] for sublist in canvasCourseEnrollees):
         canvasEnrollmentChanges.append([netID,'New'])
         addEnrollments.append(netID)
+# comparing Canvas course enrollments to AD members to determine enrollment drops
 for userName in canvasCourseEnrollees:
     if userName[0] not in adGroupMembers:
         canvasEnrollmentChanges.append([userName[0],'Drop Enrollment'])
@@ -123,6 +133,21 @@ if proceed == 'y':
         #dropURL = f"{canvasAPI}/sections/{sectionID}/enrollments/{change[2]}"
         dropParams = {"task":"conclude"}
         r = requests.delete(dropURL, headers=canvasAuth, params=dropParams)
+    print()
+    updatedEnrollments = canvasGetAllEnrollmentsInCourse(canvasAPI, canvasAuth, canvasCourseID)
+    updatedEnrollmentsTable = []
+    for enrollee in updatedEnrollments:
+        netid = enrollee['user']['sis_user_id']
+        name = enrollee['user']['sortable_name']
+        role = enrollee['role']
+        enrollment_state = enrollee['enrollment_state']
+        enrollment_id = enrollee['id']
+        updatedEnrollmentsTable.append([netid, name, role, enrollment_state, enrollment_id])
+    updatedEnrollmentsTable.sort(key=lambda x: x[1])
+    print()
+    print(f'Updated list of active course enrollments: ')
+    table = columnar(updatedEnrollmentsTable, ['NetID', 'Name', 'Role', 'Enrollment State', 'Enrollment ID'], no_borders=True)
+    print(table)
     print()
     print(f'All changes are complete. Closing connection to {canvasAPI}')
     print()
