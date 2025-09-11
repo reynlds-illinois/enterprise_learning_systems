@@ -31,10 +31,14 @@ while True:
     canvasCourseInfo = requests.get(f"{canvasApi}courses/{canvasCourseID}", headers=authHeader).json()
     canvasCourseName = canvasCourseInfo['name']
     print()
-    while newRole != 't' and newRole != 's' and newRole != 'a':
-        newRole = input("Enter course role: (t)eacher, (s)tudent or T(a): ").lower()[0]
+    while newRole != 't' and newRole != 's' and newRole != 'a' and newRole != 'o':
+        newRole = input("Enter course role: (t)eacher, (s)tudent, T(a) or (o)bserver: ").lower()[0]
         print()
-    if newRole == 't':
+    if newRole == 'o':
+        newRole = "ObserverEnrollment"
+        sectionID = 'n/a'
+        enrollURL = f"{canvasApi}courses/{canvasCourseID}/enrollments"
+    elif newRole == 't':
         newRole = "TeacherEnrollment"
         sectionID = 'n/a'
         enrollURL = f"{canvasApi}courses/{canvasCourseID}/enrollments"
