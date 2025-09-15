@@ -12,13 +12,11 @@ from canvasFunctions import getEnv
 from canvasFunctions import bind2Ldap
 #
 maxRows = 500000    # Set this for debugging
-today = str(date.today().strftime("%Y-%m-%d"))
-timeStart = datetime.now()
 envDict = getEnv()
 env = ''
 print()
 while env != 'p' and env != 's':
-    env = input('Please enter the realm to use: (p)rod or (s)tage: ').lower()[0]
+    env = input('Please enter the realm to use: (p)rod or (b)eta: ').lower()[0]
     if env == 'p':
         canvasApi = envDict["canvas.api-prod"]
     else:
@@ -45,12 +43,12 @@ pgPort = envDict['cd2.pg.port']
 #
 today = str(date.today().strftime("%Y-%m-%d"))
 timeStart = datetime.now()
-#print(icardHost, icardUser, icardPass, icardDb)
 #
 icardConn = pymssql.connect(server=icardHost, user=icardUser, password=icardPass, database=icardDb)
 icardCursor = icardConn.cursor()
 #
 print('')
+avatarSetOnProfile = 0
 rowsProcessed = 0
 logLocation = f'/var/lib/canvas-mgmt/logs/avatars/avatars_{today}.log'
 working_path = '/var/lib/canvas-mgmt/bin/avatars/'
@@ -64,8 +62,6 @@ informApiUrl = f'{canvasApi}users/self/files'
 mimeType = ('image/jpeg', None)
 tempDir = '/var/lib/canvas-mgmt/bin/avatars/tmp/'
 valid_mimetypes = ('image/jpeg','image/png','image/gif')
-#feederInput = input('Name of feeder file CSV: ')
-#feederFile = f"{working_path}feeder/{feederInput}"
 sleepTimer = .5
 cd2AvatarsNeeded = f'{working_path}feeder/{today}_avatar_users.csv'
 suppressedUsersFile = f'{working_path}feeder/{today}_suppressed_users.csv'
@@ -78,7 +74,6 @@ def eventLog(eventDetail, logLocation):
 #
 def getSuppressedUsers(ldapHost, ldapBindDn, ldapBindPw, ldapSearchBase, logLocation):
     '''Generate a small file of suppressed UINs from Active Directory'''
-    #tempAccts = []
     ldapConn = bind2Ldap(ldapHost, ldapBindDn, ldapBindPw)
     pageSize = 1000
     cookie = None
@@ -208,7 +203,7 @@ for row in cd2Avatars:
                 uploadCanvasAvatar(imageFileName, imageFilePath, uin, netID, informApiUrl, authHeader, canvasApi, logLocation)
                 print(f'### COMPLETE:  {uin} - {netID}')
                 eventLog(f'### COMPLETE:  {uin} - {netID}', logLocation)
-            #input('...waiting...')
+                avatarSetOnProfile += 1
             print()
         else: continue
 #
@@ -219,12 +214,12 @@ tdDiff = timeEnd - timeStart
 tdMins = int(round(tdDiff.total_seconds() / 60))
 print()
 print('|============= STATS ==============')
-print(f'|= Images Needed:         {len(cd2Avatars)}')
+#print(f'|= Images Needed:         {len(cd2Avatars)}')
 print(f'|= Rows processed:        {rowsProcessed}')
 #print(f'|= Images Downloaded:     {icardImagesDownloaded}')
 #print(f'|= Images Processed:      {icardImagesProcessed}')
 #print(f'|= Images uploaded/set:   {avatarUploaded}')
-#print(f'|= Images Set On Profile: {avatarSetOnProfile}')
+print(f'|= Images Set On Profile: {avatarSetOnProfile}')
 print(f'|= Execution time:        {tdMins} minutes')
 print('|==================================')
 print()
