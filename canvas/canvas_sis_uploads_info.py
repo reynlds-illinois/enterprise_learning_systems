@@ -22,7 +22,7 @@ canvasResults = 100.5
 importIDs = []
 urlDetail = 'r'
 timeFormat = "%Y-%m-%d  %H:%M:%S"
-importsHeader = ['ID', 'STATE', 'USER', 'FILE','CREATED', 'STARTED', 'ENDED']
+importsHeader = ['ID', 'STATE', 'USER', 'FILE', '% PROGRESS', 'CREATED', 'STARTED', 'ENDED']
 while True:
     try:
         print()
@@ -65,7 +65,11 @@ def canvasSISUploads(sisUrl, params, authHeaders):
         else:
             csvFilename = 'None'
             csvUrl = 'None'
-        imports.append([item['id'], item['workflow_state'], item['user']['login_id'], csvFilename, importCreatedAt, importStartedAt, importEndedAt])
+        if item['progress']:
+            itemProgress = item['progress']
+        else:
+            itemProgress = "0"
+        imports.append([item['id'], item['workflow_state'], item['user']['login_id'], csvFilename, itemProgress, importCreatedAt, importStartedAt, importEndedAt])
         importIDs.append(str(item['id']))
     #
     print()
