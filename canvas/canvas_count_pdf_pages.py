@@ -4,11 +4,11 @@ import sys, requests, os, csv,  datetime
 from pprint import pprint
 from PyPDF2 import PdfReader
 sys.path.append("/var/lib/canvas-mgmt/bin")
-from canvasFunctions import logScriptStart, realm, getEnv
-# Initialize environment
+from canvasFunctions import logScriptStart, realm, getEnv, connect2SQL
 #logScriptStart()
 envDict = getEnv()
 realm = realm()
+bannerTerm = ''
 canvasToken = realm["canvasToken"]
 canvasApi = realm["canvasApi"]
 targetDir = '/var/lib/canvas-mgmt/tmp/pdf/'
@@ -17,7 +17,7 @@ sCsvFile = '/var/lib/canvas-mgmt/tmp/canvas-pdf-list.csv'
 now = datetime.datetime.now().timestamp()
 bannerTerms = envDict['banner.terms']
 print()
-while bannerTerm not in bannerTerms
+while bannerTerm not in bannerTerms:
     bannerTerm = input('Enter the Banner term: ')
     print()
 print()
@@ -50,7 +50,7 @@ def getAllPDFs(envDict, now, bannerTerm, allPDFsFile):
     and a.file_state != 'deleted'
     order by c.sis_source_id asc, a.display_name asc;"""
     #
-    pgCursor.execute(pgQuery)
+    pgCursor.execute(sqlQuery)
     #columnHeaders = list([desc[0] for desc in pgCursor.description])
     results = pgCursor.fetchall()
     for row in results:
@@ -68,6 +68,7 @@ def downloadPDF(url, targetFilePath):
             if chunk:
                 f.write(chunk)
 #
+getAllPDFs(envDict, now, bannerTerm, allPDFsFile)
 with open(allPDFsFile, 'w', newline='') as resultsCsvFile:
     fieldnames = ['numPages', 'totalSize', 'uiucCourseID', 'attachmentID', 'pdfName']
     writer = csv.DictWriter(resultsCsvFile, fieldnames=fieldnames)
@@ -81,7 +82,7 @@ with open(allPDFsFile, 'w', newline='') as resultsCsvFile:
             pdfName = row[6]
             pdfURL = row[7]
             totalSize = row[5]
-            targetFilePath = f'{targetDir}-{uiucCourseID}-{attachmentID}.pdf'
+            targetFilePath = f'{targetDir}{uiucCourseID}-{attachmentID}.pdf'
             try:
                 r = downloadPDF(pdfURL, targetFilePath)
                 with open(targetFilePath, 'rb') as f:
