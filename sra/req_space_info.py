@@ -79,6 +79,7 @@ while True:
       /* owners */
       UO.LOGIN OWNER_NETID,
       UR.LOGIN REQUESTER_NETID,
+      SR.REQUESTER_OPT_OUT,
       UO.USER_DATA_SOURCE_KEY OWNER_UIN,
       UR.USER_DATA_SOURCE_KEY REQUESTER_UIN,
       /* comments */
@@ -154,6 +155,7 @@ while True:
     print('| COURSE_NAME   =', spaceInfo[0][18], '-', spaceInfo[0][19], '-', spaceInfo[0][20])
     print('| TYPE_DESC     =', spaceInfo[0][11])
     print('| REQUESTOR     =', spaceInfo[0][38])
+    print('|     OPT_OUT   =', spaceInfo[0][39])
     print('| OWNER         =', spaceInfo[0][37])
     print('| UNIT          =', spaceInfo[0][30])
     print('| DEPARTMENT    =', spaceInfo[0][28],'-', spaceInfo[0][29])
