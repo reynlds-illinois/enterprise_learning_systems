@@ -23,6 +23,19 @@ print(f'rCsvFile:  {rCsvFile}')
 print(f'sCsvFile:  {sCsvFile}')
 print()
 #
+# the CD2 query...please note that the correct Banner term is hardcoded in the query below
+# you will need to change it for each term you run this for
+"""select c.sis_source_id, f.name, a.id, a.workflow_state, a.file_state, (a.size / 1024) as size_KB, a.display_name, 'https://canvas.illinois.edu/files/' || a.id || '/download?download_frd=1&verifier=' || a.uuid as DOWNLOAD_URL
+from canvas.attachments a 
+  join canvas.courses c on c.id = a.context_id
+  join canvas.enrollment_terms et on et.id = c.enrollment_term_id
+  join canvas.folders f on f.id = a.folder_id  
+where a.content_type = 'application/pdf'
+  and a.context_type = 'Course'
+  and c.sis_source_id is not null
+  and et.sis_source_id = '120255'
+  and a.file_state != 'deleted'"""
+#
 def download_pdf(url, targetFilePath):
     response = requests.get(url, stream=True)
     response.raise_for_status()
