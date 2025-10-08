@@ -11,17 +11,17 @@ realm = realm()
 bannerTerm = ''
 canvasToken = realm["canvasToken"]
 canvasApi = realm["canvasApi"]
-targetDir = '/var/lib/canvas-mgmt/tmp/pdf/'
-rCsvFile = '/var/lib/canvas-mgmt/tmp/canvas-pdf-pages.csv'
-sCsvFile = '/var/lib/canvas-mgmt/tmp/canvas-pdf-list.csv'
 now = datetime.datetime.now().timestamp()
+targetDir = '/var/lib/canvas-mgmt/tmp/pdf/'
+rCsvFile = f'/var/lib/canvas-mgmt/tmp/{now}_canvas-pdf-pages.csv'
+sCsvFile = f'/var/lib/canvas-mgmt/tmp/{now}_canvas-pdf-list.csv'
 bannerTerms = envDict['banner.terms']
 print()
 while bannerTerm not in bannerTerms:
     bannerTerm = input('Enter the Banner term: ')
     print()
 print()
-allPDFsFile = f'/var/lib/canvas-mgmt/tmp/pdf/all_pdfs_{bannerTerm}_{now}.csv'
+allPDFsFile = f'/var/lib/canvas-mgmt/tmp/pdf/{now}_all_pdfs_{bannerTerm}.csv'
 #
 def getAllPDFs(envDict, now, bannerTerm, allPDFsFile):
     print()
