@@ -88,10 +88,15 @@ while True:
     if not foundCopy or int(currentCanvasCourseID) == int(defaultTemplateCourse):
         break
 #
-courseCopies = canvasJsonDates(courseCopies)
-table = columnar(courseCopies, courseEventsHeader, min_column_width=23)
-print()
-print(f">>> Course Copy History for UIUC Course ID {uiucCourseID} <<<")
-print()
-print(table)
-print()
+if len(courseCopies) > 0:
+    courseCopies = canvasJsonDates(courseCopies)
+    table = columnar(courseCopies, courseEventsHeader, min_column_width=23)
+    print()
+    print(f">>> Course Copy History for UIUC Course ID {uiucCourseID} <<<")
+    print()
+    print(table)
+    print()
+else:
+    print()
+    print('No content copy history found as this is the initial course. Exiting...')
+    print()
