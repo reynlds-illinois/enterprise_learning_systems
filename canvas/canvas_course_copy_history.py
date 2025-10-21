@@ -65,8 +65,13 @@ canvasCourseID = '60925'
 #
 courseCopies = []
 currentCanvasCourseID = origCanvasCourseID
+visited_courses = set()
 #
 while True:
+    if currentCanvasCourseID in visited_courses:
+        print(f"Detected a cycle at course {currentCanvasCourseID}. Exiting loop to prevent infinite recursion.")
+        break
+    visited_courses.add(currentCanvasCourseID)
     url = f"{canvasAPI}audit/course/courses/{currentCanvasCourseID}"
     courseAudit = requests.get(url, headers=canvasAuth, params=params)
     if courseAudit.status_code != 200:
