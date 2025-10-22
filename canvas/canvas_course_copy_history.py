@@ -97,6 +97,7 @@ while True:
 #
 if len(courseCopies) > 0:
     courseCopies = canvasJsonDates(courseCopies)
+    courseCopies.sort(key=lambda x: x[0], reverse=True)
     table = columnar(courseCopies, courseEventsHeader, min_column_width=23)
     print()
     print(f"| Course Copy History for UIUC Course ID >>> {uiucCourseID} <<<")
