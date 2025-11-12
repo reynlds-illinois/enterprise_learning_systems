@@ -38,6 +38,7 @@ loopDelay = 2
 dateOnlyFormat = '%Y-%m-%d'
 today = str(date.today().strftime('%Y-%m-%d'))
 actionChoice = ''
+uploadToBox = ''
 #
 def loadCanvasUsers(canvasUsersFilePath):
     """ Loads the canvas_users.csv file into memory as a dictionary """
@@ -157,9 +158,13 @@ if actionChoice == 'l':
     print()
 elif actionChoice == 'n':
     yesNo = ''
-    tdxTicket = input('Enter the TDX ticket number: ')
-    print()
-    netID = input('Enter the NetID of the user that will receive the token:  ')
+    while uploadToBox != 'y' and uploadToBox != 'n':
+        uploadToBox = input('>>> Upload the token to BOX (y/n)? ').lower().split()[0]
+        print()
+    if uploadToBox == 'y':
+        tdxTicket = input('Enter the TDX ticket number: ')
+        print()
+    netID = input('Enter the NetID of the user or service account that will receive the token:  ')
     print()
     #adminToken = getpass.getpass('Enter your SU admin token: ')
     adminToken = canvasToken
@@ -182,9 +187,6 @@ elif actionChoice == 'n':
         yesNo = input('>>> Continue (y/n)? ').lower().split()[0]
         print()
     if yesNo == 'y':
-        tokenTempFileName = f'{netID}_TDX-{tdxTicket}_token.txt'
-        tokenTempFile = f'{tokenTempFolder}/{tokenTempFileName}'
-        requestorEmailAddress = f'{netID}@illinois.edu'
         try:
             newToken = canvasCreateUserToken(canvasApi, canvasUserID, reason, expiryDate, adminAuth)
             print('Successfully created token.')
@@ -197,41 +199,45 @@ elif actionChoice == 'n':
             print('Token NOT successfully created.')
             print(E)
             print()
-        try:
-            with open(tokenTempFile, 'w') as localTempFile:
-                localTempFile.write(f'''NetID:  {netID}
+        if uploadToBox == 'y':
+            tokenTempFileName = f'{netID}_TDX-{tdxTicket}_token.txt'
+            tokenTempFile = f'{tokenTempFolder}/{tokenTempFileName}'
+            requestorEmailAddress = f'{netID}@illinois.edu'
+            try:
+                with open(tokenTempFile, 'w') as localTempFile:
+                    localTempFile.write(f'''NetID:  {netID}
 Expiration:  {expiryDate}
 Token:  {newToken["visible_token"]}
 ''')
-            # upload local CSV file to new BOX target folder
-            r = boxClient.folder(boxParentFolderID).upload(tokenTempFile, tokenTempFileName)
-            print(r)
-            newTokenFileID = r['id']
-            print('  = Successfully uploaded the TOKEN_FILE to BOX.')
-            # share new BOX target file with TDX requestor
-            x = boxClient.file(newTokenFileID).collaborate_with_login(requestorEmailAddress,CollaborationRole.VIEWER)
-            boxSharedLink = f'https://uofi.box.com/file/{newTokenFileID}'
-            print()
-            print("|----------------------------------------------------------------------")
-            print("| A user token for the Canvas API has been generated for your use.")
-            print("| The next step is for you to activate it in your Canvas account" )
-            print("| by following the steps detailed in this Illinois KB article:")
-            print("|")
-            print("| https://answers.uillinois.edu/illinois/internal/150325")
-            print("|")
-            print("| Following activation you can access your token info here:")
-            print('|')
-            print(f'| {boxSharedLink}')
-            print("|----------------------------------------------------------------------")
-            print()
-            # delete local temp file
+                # upload local CSV file to new BOX target folder
+                r = boxClient.folder(boxParentFolderID).upload(tokenTempFile, tokenTempFileName)
+                print(r)
+                newTokenFileID = r['id']
+                print('  = Successfully uploaded the TOKEN_FILE to BOX.')
+                # share new BOX target file with TDX requestor
+                x = boxClient.file(newTokenFileID).collaborate_with_login(requestorEmailAddress,CollaborationRole.VIEWER)
+                boxSharedLink = f'https://uofi.box.com/file/{newTokenFileID}'
+                print()
+                print("|----------------------------------------------------------------------")
+                print("| A user token for the Canvas API has been generated for your use.")
+                print("| The next step is for you to activate it in your Canvas account" )
+                print("| by following the steps detailed in this Illinois KB article:")
+                print("|")
+                print("| https://answers.uillinois.edu/illinois/internal/150325")
+                print("|")
+                print("| Following activation you can access your token info here:")
+                print('|')
+                print(f'| {boxSharedLink}')
+                print("|----------------------------------------------------------------------")
+                print()
+                # delete local temp file
+            except BoxAPIException as e:
+                print(f'!!! Error During BOX Actions: {e}')
+                print()
+            #except Exception as e:
+            #    print(f'!!! Error During BOX Actions: {e}')
+            #    print()
             os.remove(tokenTempFile)
-        except BoxAPIException as e:
-            print(f'!!! Error During BOX Actions: {e}')
-            print()
-        except Exception as e:
-            print(f'!!! Error During BOX Actions: {e}')
-            print()
     else:
         print('Token NOT created.')
         print()
