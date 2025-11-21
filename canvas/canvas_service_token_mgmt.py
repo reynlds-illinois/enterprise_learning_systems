@@ -16,7 +16,7 @@ from boxsdk.exception import BoxAPIException
 from boxsdk.object.collaboration import CollaborationRole
 from columnar import columnar
 #
-#logScriptStart()
+logScriptStart()
 realm = realm()
 env = getEnv()
 canvasToken = realm['canvasToken']
@@ -203,6 +203,9 @@ while True:
                 print(f'  = Expiry Date: {expiryDate}')
                 print(f'    >>>>> Token: {newToken["visible_token"]}')
                 newTokenCreated = True
+                print()
+                print('> Please logon to Canvas and activate the new token.')
+                print('> This will have to be done BEFORE the token can be used.')
                 print()
             except Exception as E:
                 print('Token NOT successfully created.')
