@@ -4,7 +4,7 @@ Canvas Developer Docs Landing Page:
 
 Canvas REST API:
 
-     https://canvas.instructure.com/doc/api/index.html
+     https://developerdocs.instructure.com/services/canvas/resources
 
 Instructure Data Access Platform:
 
