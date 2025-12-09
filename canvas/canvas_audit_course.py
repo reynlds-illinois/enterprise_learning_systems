@@ -85,7 +85,7 @@ while True:
     # Print course events table
     if len(courseEventsTable) > 0:
         courseEventsTable.sort(key=lambda x: x[0], reverse=True)
-        print(columnar(courseEventsTable, courseEventsHeader))
+        print(columnar(courseEventsTable, courseEventsHeader, wrap_max=50))
     else:
         print(f'>>> No audit info recorded for {uiucCourseID}.')
     print()
