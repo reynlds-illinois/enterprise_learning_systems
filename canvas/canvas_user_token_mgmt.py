@@ -23,7 +23,7 @@ canvasToken = realm['canvasToken']
 canvasApi = realm['canvasApi']
 canvasUserTokensCSV = env['canvas.user.tokens']
 authHeader = {"Authorization": f"Bearer {canvasToken}"}
-serviceAccts = ['84','94','109','7016','8994','125511','129156','132703','319151','319349','336978','355105','360354','377818','378454','381230','400969','417093','420084','426543']
+serviceAccts = ['84','94','109','7016','8994','125511','129156','132703','319151','319349','336978','355105','360354','377818','378454','381230','400969','417093','420084','426543','468041']
 columnHeader = ['canvas_id', 'netid', 'canvas_user', 'hint', 'expires', 'last_used']
 userTokens = []
 tokenTempFolder = '/var/lib/canvas-mgmt/tmp'
@@ -140,10 +140,11 @@ def generateExpiryDate():
 #
 canvasAllUsers = loadCanvasUsers(canvasUsersFilePath)
 #
-while actionChoice != 'N30' and actionChoice != 'NN' and actionChoice != 'P' and actionChoice != 'l' and actionChoice != 'n' and actionChoice != 'd' and actionChoice != 'DE':
+while actionChoice != 'N30' and actionChoice != 'NN' and actionChoice != 'P' and actionChoice != 'l' and actionChoice != 'n' and actionChoice != 'd' and actionChoice != 'DE' and actionChoice != 'EXP':
     print('Choose an action: (l)ist user tokens')
     print('                  (n)ew user token')
     print('                  (d)elete a specific user token')
+    print('                  (EXP) delete all expired tokens')
     print('                  (P)rompted delete of tokens one at a time')
     print('                  (NN) delete tokens without expiry or last used dates')
     print('                  (N30) delete unsued tokens or those used longer than 30 days ago')
@@ -311,6 +312,30 @@ elif actionChoice == 'N30':
                 canvasUserID = userTokenInfo[0]
                 tokenHint = userTokenInfo[3]
                 canvasDeleteUserToken(canvasApi, canvasUserID, tokenHint, authHeader)
+elif actionChoice == 'EXP':
+    YES_NO = ''
+    while YES_NO != 'y' and YES_NO != 'n':
+        YES_NO = input('Continue deleting all tokens that have expired (y/n)? ').lower().strip()
+        print()
+    if YES_NO == 'y':
+        userTokens = canvasListUserTokens(canvasUserTokensCSV, canvasAllUsers)
+        today = datetime.now()
+        todayStr = today.strftime('%Y-%m-%d')
+        for userTokenInfo in userTokens:
+            if userTokenInfo[4] != 'never':  # Ensure expiryDate is not 'never'
+                expiryDate = datetime.strptime(userTokenInfo[4], '%Y-%m-%d')  # Convert to datetime
+                if expiryDate < datetime.strptime(todayStr, '%Y-%m-%d'):  # Compare dates
+                    yesNo = ''
+                    print(userTokenInfo)
+                    print()
+                    #while yesNo != 'y' and yesNo != 'n':
+                    #    yesNo = input('  > Delete this expired token (y/n)? ').lower().strip()
+                    #if yesNo == 'y':
+                    canvasUserID = userTokenInfo[0]
+                    tokenHint = userTokenInfo[3]
+                    canvasDeleteUserToken(canvasApi, canvasUserID, tokenHint, authHeader)
+                    #print()
+                    time.sleep(loopDelay)
 else:
     tokenChoice = ''
     canvasUserID = ''
