@@ -24,7 +24,7 @@ canvasApi = realm['canvasApi']
 canvasUserTokensCSV = env['canvas.user.tokens']
 authHeader = {"Authorization": f"Bearer {canvasToken}"}
 serviceAccts = ['84','94','109','7016','8994','125511','129156','132703','319151','319349','336978','355105','360354','377818','378454','381230','400969','417093','420084','426543','468041']
-columnHeader = ['canvas_id', 'netid', 'canvas_user', 'hint', 'expires', 'last_used']
+columnHeader = ['canvas_id', 'netid', 'canvas_user', 'hint', 'created','expires', 'last_used', 'status']
 userTokens = []
 tokenTempFolder = '/var/lib/canvas-mgmt/tmp'
 jwtAuthFile = env['uofi.box.jwtauth.file']
@@ -59,23 +59,26 @@ def canvasListUserTokens(canvasUserTokensCSV, canvasAllUsers):
     with open(canvasUserTokensCSV, 'r') as file:
         allTokens = csv.reader(file)
         for line in allTokens:
-            if line[5] == '170000000000016' and line[0] not in serviceAccts:
+            if line[10] == '170000000000016' and line[9] == 'active' and line[0] not in serviceAccts:
                 canvasUserID = line[0]
                 canvasUser = line[1]
-                tokenHint = line[2]
+                tokenHint = line[4]
+                tempStatus = line[9]
                 if line[3] == 'never': expiryDate = line[3]
                 else:
-                    expiryDate = datetime.fromisoformat(line[3])
+                    createdDate = datetime.fromisoformat(line[6])
+                    createdDate = datetime.strftime(createdDate, dateOnlyFormat)
+                    expiryDate = datetime.fromisoformat(line[7])
                     expiryDate = datetime.strftime(expiryDate, dateOnlyFormat)
-                if line[4] == 'never': lastUsedDate = line[4]
+                if line[8] == 'never': lastUsedDate = line[8]
                 else:
-                    lastUsedDate = datetime.fromisoformat(line[4])
+                    lastUsedDate = datetime.fromisoformat(line[8])
                     lastUsedDate = datetime.strftime(lastUsedDate, dateOnlyFormat)
                 for row in canvasAllUsers:
                     if canvasUserID == row[0]:
                         netID = row[1]
                         break
-                userTokens.append([canvasUserID, netID, canvasUser, tokenHint, expiryDate, lastUsedDate])
+                userTokens.append([canvasUserID, netID, canvasUser, tokenHint, createdDate, expiryDate, lastUsedDate, tempStatus])
     # Remove duplicates from userTokens (keep first occurrence)
     seen = set()
     uniqueUserTokens = []
