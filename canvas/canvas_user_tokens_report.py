@@ -26,7 +26,7 @@ targetFilePath = canvasUserTokens
 startReportURL = f'{canvasApi}accounts/1/reports/{canvasReportName}'
 reportID = requests.post(startReportURL, headers=authHeader).json()['id']
 reportURL = f'{canvasApi}accounts/1/reports/{canvasReportName}/{reportID}'
-maxRetries = 50
+maxRetries = 500
 retries = 0
 while reportProgress < 100:
     response = requests.get(reportURL, headers=authHeader).json()
@@ -38,7 +38,7 @@ while reportProgress < 100:
     if retries == maxRetries:
         #print('Report generation timed out.')
         exit
-if retries < 50:
+if retries < maxRetries:
     with open(targetFilePath, "wb") as file:
         downloadFile = str(response["attachment"]["url"])
         fileLink = requests.get(downloadFile)
