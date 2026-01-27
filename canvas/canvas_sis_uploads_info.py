@@ -91,11 +91,15 @@ while True:
         importUrl = f"{sisUrl}/{urlDetail}"
         r = requests.get(importUrl, headers=authHeaders).json()
         r = canvasJsonDates(r)
-        print(f'=== DETAILS FOR IMPORT ID {urlDetail} ===')
+        print(f'===== DETAILS FOR IMPORT ID {urlDetail} =====')
         print()
         pprint(r)
-        break
         print()
+        print('=================================================')
+        print()
+        print(f' > Admin URL:  {canvasApi}accounts/self/sis_imports/{urlDetail}')
+        print()
+        break
     else:
         print('Invalid input. Please enter a valid SIS ID, "r" to refresh, or "q" to quit.')
         print()
