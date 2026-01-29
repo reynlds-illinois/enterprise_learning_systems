@@ -179,6 +179,7 @@ while True:
                     print(f'    Course Role:     {enrollInfo["role"]}')
                     print(f'    Sub-account:     {enrollInfo["sis_account_id"]}')
                     print(f'    Created:         {enrollInfo["created_at"]}')
+                    print(f'    SIS Import ID:   {enrollInfo["sis_import_id"]}')
                     if "last_activity_at" not in enrollInfo:
                         print(f'    Last Activity:   n/a')
                     else:
