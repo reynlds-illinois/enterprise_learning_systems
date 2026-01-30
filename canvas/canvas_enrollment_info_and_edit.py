@@ -13,6 +13,8 @@ print('')
 canvasApi = realm['canvasApi']
 canvasUrl = realm['canvasUrl']
 canvasToken = realm['canvasToken']
+#canvasToken = input('Enter your Canvas token:  ')
+print()
 authHeader = {"Authorization": f"Bearer {canvasToken}"}
 canvasTerms = realm['canvasTerms']
 canvasAccountID = realm['canvasUrbanaID']
@@ -20,7 +22,7 @@ envLabel = realm['envLabel']
 dateFormat = "%Y-%m-%dT%H:%M:%S"
 sleepDelay = 2
 #
-def canvasEnrollmentEdit(canvasApi, authHeader, row, enrollmentNewStatus):
+def canvasEnrollmentEdit(enrollID, canvasApi, authHeader, row, enrollmentNewStatus):
     resetDate = 0
     canvasCourseID = row[0]
     courseURL = f"{canvasApi}courses/{canvasCourseID}"
@@ -35,22 +37,29 @@ def canvasEnrollmentEdit(canvasApi, authHeader, row, enrollmentNewStatus):
         print()
         resetDate = 1
         newEndDate = datetime.now() + timedelta(hours=1)
-        #newEndDate = newEndDate.strftime(dateFormat)
         courseParams = {"course[end_at]":newEndDate}
         courseDateChange = requests.put(courseURL, headers=authHeader, params=courseParams)
     time.sleep(sleepDelay)
-    params = {"enrollment[user_id]":canvasUserID,
-              "enrollment[type]":row[6],
-              "enrollment[enrollment_state]":enrollmentNewStatus,
-              "enrollment[notify]":False,
-              "enrollment[course_section_id]":row[5],
-              }
-    url = f"{canvasApi}courses/{row[0]}/enrollments"
-    print()
-    print('>>> Modifying enrollment <<<')
-    print()
-    enrollModify = requests.post(url, headers=authHeader, params=params).json()
-    print('')
+    if enrollmentNewStatus == 'delete':
+        files = {"task":f"{enrollmentNewStatus}",}
+        delURL = f"{canvasApi}courses/{row[0]}/enrollments/{row[1]}"
+        print(f'PARAMS:  {files}')
+        print(f'URL:     {delURL}')
+        enrollModify = requests.delete(delURL, params=files, headers=authHeader).json()
+    else:
+        params = {"enrollment[user_id]":canvasUserID,
+                  "enrollment[type]":row[6],
+                  "enrollment[enrollment_state]":enrollmentNewStatus,
+                  "enrollment[notify]":False,
+                  "enrollment[course_section_id]":row[5],
+                  }
+        url = f"{canvasApi}courses/{row[0]}/enrollments"
+        print(f'PARAMS:  {params}')
+        print(f'URL:     {url}')
+        print()
+        print('>>> Modifying enrollment <<<')
+        enrollModify = requests.post(url, headers=authHeader, params=params).json()
+        print('')
     time.sleep(sleepDelay)
     if len(enrollModify) > 1:
         print('> Enrollment successfully changed:')
@@ -75,7 +84,6 @@ def canvasEnrollmentEdit(canvasApi, authHeader, row, enrollmentNewStatus):
         courseDateChange = requests.put(courseURL, headers=authHeader, params=courseParams)
     time.sleep(sleepDelay)
 while True:
-    #from canvasFunctions import canvasCourseInfo
     resetDate = 0
     answer = 'x'
     canvasUserID = 'F'
@@ -136,7 +144,6 @@ while True:
                 tableTemp.append([row['course_id'], str(row['id']), row['sis_user_id'], row['sis_course_id'], row["sis_section_id"], int(row["course_section_id"]), row['role'], row['enrollment_state']])
                 canvasEnrollIDs.append(str(row['id']))
             else: continue
-        # Sort tableTemp by the 4th column (sis_course_id) ascending
         tableTemp.sort(key=lambda x: x[3])
         table = columnar(tableTemp, columnHeaders, no_borders=True)
         #
@@ -201,7 +208,7 @@ while True:
                 print('')
             if enrollmentNewStatus == 'a': enrollmentNewStatus = 'active'
             elif enrollmentNewStatus == 'c': enrollmentNewStatus = 'completed' # DEBUG
-            elif enrollmentNewStatus == 'd': enrollmentNewStatus = 'deleted'
+            elif enrollmentNewStatus == 'd': enrollmentNewStatus = 'delete'
             else: enrollmentNewStatus == 'q'
             print('')
             if enrollRestoreSelection != 'q' and enrollmentNewStatus != 'q' and enrollRestoreSelection in canvasEnrollIDs and enrollmentNewStatus != row[7]:
@@ -209,7 +216,8 @@ while True:
                 if enrollConfirm == True:
                     for row in tableTemp:
                         if row[1] == enrollRestoreSelection:
-                            canvasEnrollmentEdit(canvasApi, authHeader, row, enrollmentNewStatus)
+                            enrollID = row[1]
+                            canvasEnrollmentEdit(enrollID, canvasApi, authHeader, row, enrollmentNewStatus)
             else:
                 print("Closing connection. No changes made.")
             print('')
@@ -227,6 +235,3 @@ while True:
     else:
         print()
         break
-#
-print("Closing connection and exiting...")
-print('')
