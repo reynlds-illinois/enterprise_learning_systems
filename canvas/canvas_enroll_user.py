@@ -6,7 +6,8 @@ from pprint import pprint
 sys.path.append("/var/lib/canvas-mgmt/bin")
 from canvasFunctions import realm
 from canvasFunctions import canvasGetUserInfo
-from canvasFunctions import findCanvasCourse
+#from canvasFunctions import findCanvasCourse
+from canvasFunctions import canvasGetCourseInfo
 from canvasFunctions import findCanvasSection
 from canvasFunctions import findCanvasSections
 #
@@ -16,19 +17,21 @@ sleepDelay = 2
 newRole = ''
 answer = 'x'
 yesNo = ''
-canvasApi = realm['canvasApi']
+canvasAPI = realm['canvasApi']
 canvasToken = realm['canvasToken']
-print(f'Connected to:  {canvasApi}')
+print(f'Connected to:  {canvasAPI}')
 params = {"per_page": 100}
-authHeader = {"Authorization": f"Bearer {canvasToken}"}
+canvasAuth = {"Authorization": f"Bearer {canvasToken}"}
 while True:
     print()
     netID = input('Enter the NetID for enrollment:  ')
     canvasUserID = canvasGetUserInfo(netID)[0]
     print()
     uiucCourseID = input('Please enter the course ID to which they will be enrolled:  ')
-    canvasCourseID = findCanvasCourse(uiucCourseID)
-    canvasCourseInfo = requests.get(f"{canvasApi}courses/{canvasCourseID}", headers=authHeader).json()
+    #canvasCourseID = findCanvasCourse(uiucCourseID)
+    #canvasCourseInfo = requests.get(f"{canvasApi}courses/{canvasCourseID}", headers=authHeader).json()
+    canvasCourseInfo = canvasGetCourseInfo(uiucCourseID, canvasAuth, canvasAPI)
+    canvasCourseID = canvasCourseInfo['id']
     canvasCourseName = canvasCourseInfo['name']
     print()
     while newRole != 't' and newRole != 's' and newRole != 'a' and newRole != 'o':
@@ -37,11 +40,11 @@ while True:
     if newRole == 'o':
         newRole = "ObserverEnrollment"
         sectionID = 'n/a'
-        enrollURL = f"{canvasApi}courses/{canvasCourseID}/enrollments"
+        enrollURL = f"{canvasAPI}courses/{canvasCourseID}/enrollments"
     elif newRole == 't':
         newRole = "TeacherEnrollment"
         sectionID = 'n/a'
-        enrollURL = f"{canvasApi}courses/{canvasCourseID}/enrollments"
+        enrollURL = f"{canvasAPI}courses/{canvasCourseID}/enrollments"
     elif newRole == 's':
         courseSections = findCanvasSections(uiucCourseID)
         courseSectionsList = []
@@ -63,30 +66,30 @@ while True:
         while sectionID not in courseSectionsList:
             sectionID = input("  > Enter the Section ID of the target course: ")
             #canvasSectionID = findCanvasSection(sectionID)
-            enrollURL = f"{canvasApi}sections/{sectionID}/enrollments"
+            enrollURL = f"{canvasAPI}sections/{sectionID}/enrollments"
     else:
         newRole = "TaEnrollment"
         sectionID = 'n/a'
-        enrollURL = f"{canvasApi}courses/{canvasCourseID}/enrollments"
+        enrollURL = f"{canvasAPI}courses/{canvasCourseID}/enrollments"
     #
     #canvasCourseID = canvasCourseInfo['id']
-    courseURL = f"{canvasApi}courses/{canvasCourseID}"
+    courseURL = f"{canvasAPI}courses/{canvasCourseID}"
     #enrollURL = f"{courseURL}/enrollments"
     print()
     dateFormat = "%Y-%m-%dT%H:%M:%S"
     env = ''
     print()
-    print("|=== ENROLLMENT SUMMARY ===")
-    print("|")
-    print(f"| NetID:       {netID}")
-    print(f"| Course Role: {newRole}")
-    print(f"| Course ID:   {uiucCourseID}")
-    print(f"| Section ID:  {sectionID}")
-    print(f"| Course Name: {canvasCourseName}")
-    print(f"| End Date:    {canvasCourseInfo['end_at']}")
-    print(f"| Enroll URL:  {enrollURL}")
-    print("|")
-    print("| ========================")
+    print("  |=== ENROLLMENT SUMMARY ===")
+    print("  |")
+    print(f"  | NetID:       {netID}")
+    print(f"  | Course Role: {newRole}")
+    print(f"  | Course ID:   {uiucCourseID}")
+    print(f"  | Section ID:  {sectionID}")
+    print(f"  | Course Name: {canvasCourseName}")
+    print(f"  | End Date:    {canvasCourseInfo['end_at']}")
+    print(f"  | Enroll URL:  {enrollURL}")
+    print("  |")
+    print("  | ========================")
     print()
     while yesNo != 'y' and yesNo != 'n':
         yesNo = input("> Proceed? (y/n)  ").lower()[0]
@@ -110,7 +113,7 @@ while True:
                 newEndDate = nowUTC + timedelta(hours=1)
                 newEndDateStr = newEndDate.strftime("%Y-%m-%dT%H:%M:%SZ")
                 courseParams = {"course[end_at]": newEndDateStr}
-                courseDateChange = requests.put(courseURL, headers=authHeader, params=courseParams)
+                courseDateChange = requests.put(courseURL, headers=canvasAuth, params=courseParams)
                 print("> Course date successfully updated.")
                 time.sleep(sleepDelay)
                 print()
@@ -121,7 +124,7 @@ while True:
                             "enrollment[notify]":"false"}
             # enroll user as teacher in course
             #print(f'enrollParams: {enrollParams}')
-            r = requests.post(enrollURL, headers=authHeader, params=enrollParams)
+            r = requests.post(enrollURL, headers=canvasAuth, params=enrollParams)
             #print(r.text)
             print(f"> Successfully enrolled {newRole} in course.")
             time.sleep(sleepDelay)
@@ -129,7 +132,7 @@ while True:
             if updatedEndDate:
                 # Only reset end date if it was changed
                 courseParams = {"course[end_at]": endDate}
-                courseDateChange = requests.put(courseURL, headers=authHeader, params=courseParams)
+                courseDateChange = requests.put(courseURL, headers=canvasAuth, params=courseParams)
                 print("> Course date successfully set back to original.")
                 print()
                 time.sleep(sleepDelay)
@@ -151,5 +154,5 @@ while True:
         print()
         break
 #
-print(f"### Closing connection {canvasApi}...")
+print(f"### Closing connection {canvasAPI}...")
 print('')
