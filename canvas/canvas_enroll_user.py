@@ -5,7 +5,7 @@ from datetime import date, datetime, timedelta, timezone
 from pprint import pprint
 sys.path.append("/var/lib/canvas-mgmt/bin")
 from canvasFunctions import realm
-from canvasFunctions import canvasGetUserInfo
+from canvasFunctions import canvasGetUserInfoLive as canvasGetUserInfo
 #from canvasFunctions import findCanvasCourse
 from canvasFunctions import canvasGetCourseInfo
 from canvasFunctions import findCanvasSection
@@ -24,8 +24,10 @@ params = {"per_page": 100}
 canvasAuth = {"Authorization": f"Bearer {canvasToken}"}
 while True:
     print()
-    netID = input('Enter the NetID for enrollment:  ')
-    canvasUserID = canvasGetUserInfo(netID)[0]
+    searchTerm = input('Enter the NetID for enrollment:  ')
+    canvasUserInfo = canvasGetUserInfo(searchTerm, canvasAPI, canvasAuth)
+    canvasUserID = canvasUserInfo['id']
+    netID = canvasUserInfo['sis_user_id']
     print()
     uiucCourseID = input('Please enter the course ID to which they will be enrolled:  ')
     #canvasCourseID = findCanvasCourse(uiucCourseID)
