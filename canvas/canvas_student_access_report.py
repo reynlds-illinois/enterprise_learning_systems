@@ -16,9 +16,9 @@ from boxsdk.exception import BoxAPIException
 from boxsdk.object.collaboration import CollaborationRole
 from canvasFunctions import realm
 from canvasFunctions import getEnv
-from canvasFunctions import canvasGetUserInfo
-from canvasFunctions import findCanvasCourse
-
+from canvasFunctions import canvasGetUserInfoLive as canvasGetUserInfo
+from canvasFunctions import canvasGetCourseInfo
+#
 env = getEnv()
 realm = realm()
 canvasURL = realm['canvasUrl']
@@ -26,6 +26,10 @@ jwtAuthFile = env['uofi.box.jwtauth.file']
 canvasUser = env['cm.user']
 canvasPass = env['cm.pass']
 canvasAuthURL = f'{canvasURL}/login/canvas'
+canvasAPI = realm['canvasApi']
+canvasURL = realm['canvasUrl']
+canvasToken = realm['canvasToken']
+canvasAuth = {"Authorization": f"Bearer {canvasToken}"}
 print(f'canvasAuthURL: {canvasAuthURL}')
 print()
 boxJwtAuthFile = env['uofi.box.jwtauth.file']
@@ -41,10 +45,12 @@ print()
 requestorNetID = input('  > Enter the NetID of the TDX requestor: ')
 print()
 netID = input    ("  > Enter the student's NetID: ")
-canvasUserID = canvasGetUserInfo(netID)[0]
+canvasUserInfo = canvasGetUserInfo(netID, canvasAPI, canvasAuth)
+canvasUserID = canvasUserInfo['id']
 print()
 courseID = input ('  > Enter the Course ID : ')
-canvasCourseID = findCanvasCourse(courseID)
+canvasCourseInfo = canvasGetCourseInfo(courseID, canvasAuth, canvasAPI)
+canvasCourseID = canvasCourseInfo['id']
 print()
 #
 input('  > Press Enter to continue... ')
@@ -68,7 +74,7 @@ def setup_browser():
     driver = webdriver.Chrome(options=chrome_options)
     driver.implicitly_wait(3)
     return driver
-
+#
 def canvasLogin(driver, canvasUser, canvasPass, canvasAuthURL):
     """Authenticate the user."""
     driver.get(canvasAuthURL)
@@ -85,7 +91,7 @@ def canvasLogin(driver, canvasUser, canvasPass, canvasAuthURL):
         EC.presence_of_element_located((By.XPATH, '//*[@id="global_nav_profile_link"]'))
     )
     print("  = Login successful")
-
+#
 def student_access_report_export(driver, reportURL, targetFilePath):
     """Scroll to load JavaScript content and export the page to a PDF."""
     driver.get(reportURL)
@@ -118,7 +124,7 @@ def student_access_report_export(driver, reportURL, targetFilePath):
         # Optionally, capture a screenshot for debugging
         driver.save_screenshot("timeout_error.png")
         print("  !!! Screenshot saved as 'timeout_error.png'.")
-
+#
 def uploadToBox(targetFilePath, targetFileName, boxParentFolderID, boxFolderName, requestorEmailAddress):
     try:
         # create target folder in BOX
@@ -139,7 +145,7 @@ def uploadToBox(targetFilePath, targetFileName, boxParentFolderID, boxFolderName
         print('  ==')
     except Exception as e:
         print(f'!!! Error During BOX Actions: {e}')
-
+#
 def main():
     """Main function to run the tests."""
     driver = setup_browser()
