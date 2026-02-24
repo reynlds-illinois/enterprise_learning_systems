@@ -18,11 +18,11 @@ canvasAPI = realm['canvasApi']
 canvasToken = realm['canvasToken']
 params = {"per_page": 100}
 canvasAuth = {"Authorization": f"Bearer {canvasToken}"}
-
+#
 # Define event types and table headers
 eventTypes = ['concluded', 'created', 'copied_from', 'published', 'updated']
 courseEventsHeader = ['TIMESTAMP', 'COURSE_ID', 'EVENT_SRC', 'EVENT_TYPE', 'SOURCE_COURSE', 'TARGET_COURSE', 'INITIATOR', 'DETAILS']
-
+#
 while True:
     answer = ''
     # Get course ID from user
@@ -64,16 +64,28 @@ while True:
         eventSource = item['event_source']
         eventType = item['event_type']
         if eventType == 'copied_from':
-            sourceCourseTemp = canvasCourseInfo(item['links']['copied_from'], canvasAPI, canvasAuth)['sis_course_id']
+            try:
+                sourceCourseTemp = canvasCourseInfo(item['links']['copied_from'], canvasAPI, canvasAuth)['sis_course_id']
+            except Exception as E:
+                sourceCourseTemp = 'XXXXXXXXXX'
         else: sourceCourseTemp = 'n/a'
         if eventType == 'copied_to':
-            targetCourseTemp = canvasCourseInfo(item['links']['copied_to'], canvasAPI, canvasAuth)['sis_course_id']
+            try:
+                targetCourseTemp = canvasCourseInfo(item['links']['copied_to'], canvasAPI, canvasAuth)['sis_course_id']
+            except Exception as E:
+                targetCourseTemp = 'XXXXXXXXXX'
         else: targetCourseTemp = 'n/a'
         if item['links']['course']:
-            courseTemp = canvasCourseInfo(item['links']['course'], canvasAPI, canvasAuth)['sis_course_id']
+            try:
+                courseTemp = canvasCourseInfo(item['links']['course'], canvasAPI, canvasAuth)['sis_course_id']
+            except Exception as E:
+                courseTemp = 'XXXXXXXXXX'
         else: courseTemp = 'n/a'
         if item['links']['user']:
-            userTemp = canvasGetNetID(item['links']['user'])[4]
+            try:
+                userTemp = canvasGetNetID(item['links']['user'])[4]
+            except Exception as E:
+                userTemp = 'XXXXXXXXXX'
         else: userTemp = 'n/a'
         if item['event_data']:
             eventData = item['event_data']
