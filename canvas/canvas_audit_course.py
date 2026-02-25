@@ -67,7 +67,7 @@ while True:
             try:
                 sourceCourseTemp = canvasCourseInfo(item['links']['copied_from'], canvasAPI, canvasAuth)['sis_course_id']
             except Exception as E:
-                sourceCourseTemp = 'XXXXXXXXXX'
+                sourceCourseTemp = item['links']['copied_from']
         else: sourceCourseTemp = 'n/a'
         if eventType == 'copied_to':
             try:
