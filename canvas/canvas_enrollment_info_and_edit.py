@@ -95,7 +95,7 @@ while True:
     canvasSectionID = ''
     courseStatus = []
     while canvasUserID == "F":
-        searchTerm = input("Enter the NetID of the user: ")
+        searchTerm = input("Enter the NetID, UIN or E-mail of the user: ")
         canvasUserInfo = canvasGetUserInfo(searchTerm, canvasAPI, canvasAuth)
         canvasUserID = canvasUserInfo['id']
         netID = canvasUserInfo['sis_user_id']
