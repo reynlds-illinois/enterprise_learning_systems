@@ -24,7 +24,7 @@ params = {"per_page": 100}
 canvasAuth = {"Authorization": f"Bearer {canvasToken}"}
 while True:
     print()
-    searchTerm = input('Enter the NetID for enrollment:  ')
+    searchTerm = input('Enter the NetID, UIN or E-mail for enrollment:  ')
     canvasUserInfo = canvasGetUserInfo(searchTerm, canvasAPI, canvasAuth)
     canvasUserID = canvasUserInfo['id']
     netID = canvasUserInfo['sis_user_id']
