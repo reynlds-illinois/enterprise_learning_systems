@@ -31,14 +31,14 @@ menuText=$(cat <<'EOF'
        (?) Canvas: Student Access Report (optional upload to BOX)
        (f) Class Rosters: Get Course Memberships (PROD)
        (N) Canvas: Find New Quizzes in Course or Banner Term
+       (H) Canvas: Course Content Copy to Another Course
 
     Canvas Course/User/Roster Management:
        (g) Canvas: Enrollment Info and Status Change (PROD/STAGE-Live)
-       (h) Canvas: Enroll User In non-Closed Course (PROD/STAGE-Live)
+       (h) Canvas: Enroll User In A Course (closed or still open)
        (i) Canvas: Observer Manager (PROD/STAGE-Live)
        ($) Canvas: Extend Course For a Single Student
        (@) Canvas: Move Registrar-enabled Course (also affects SRA placement)
-       (#) Canvas: Add Enrollment to Closed Course
        (Z) Canvas: Export Course as Zip, Qti or CC
        (T) Canvas: User Token Management for API
 
@@ -63,6 +63,7 @@ menuText=$(cat <<'EOF'
        (v) Canvas SIS ID Details            (y) Edit Crontab (PROD)
        (w) Canvas SIS Uploads Info          (z) Python 3.12 Virtual Env (PROD)
        (x) Update Canvas Objects (PROD)     (+) Generate a Complex Password
+       (!) Canvas Incident Management
 
     (Q/q)uit
     ===============================================================================
@@ -87,10 +88,10 @@ do
         "f") executeCommand "~/bin/cr_member_info.sh" ;;
         "g") executeCommand "~/bin/canvas_enrollment_info_and_edit.sh" ;;
         "h") executeCommand "~/bin/canvas_enroll_user.sh" ;;
+        "H") executeCommand "~/bin/canvas_course_content_copy.sh" ;;
         "i") executeCommand "~/bin/canvas_observer_mgr.sh" ;;
         "$") executeCommand "~/bin/canvas_extend_course_for_single_student.sh" ;;
         "@") executeCommand "~/bin/canvas_sra_move_course.sh" ;;
-        "#") executeCommand "~/bin/canvas_add_enrollment_to_closed_course.sh" ;;
         "Z") executeCommand "~/bin/canvas_export_course.sh" ;;
         "T") executeCommand "~/bin/canvas_user_token_mgmt.sh" ;;
         "j") executeCommand "~/bin/cd2_query_db.sh" ;;
@@ -108,6 +109,7 @@ do
         "v") executeCommand "~/bin/canvas_sis_id_details.sh" ;;
         "w") executeCommand "~/bin/canvas_sis_uploads_info.sh" ;;
         "x") executeCommand "~/bin/canvas_objects_download.sh" ;;
+        "!") executeCommand "~/bin/canvas_incident_mgmt.sh" ;;
         "y") echo ""; eval crontab -e; pressKey ;;
         "z") echo "Starting Python 3.12 Virtual Development environment..."; echo ""; eval source ~/python312-venv/bin/activate; python; pressKey ;;
         "+") executeCommand "~/bin/generate_password.sh" ;;
