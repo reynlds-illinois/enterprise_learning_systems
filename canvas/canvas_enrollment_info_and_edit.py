@@ -136,13 +136,16 @@ while True:
     if len(searchResults) > 0:
         searchResults = canvasJsonDates(searchResults)
         tableTemp = []
-        columnHeaders = ['course_id', '>ENROLL_ID<', 'net_id', 'sis_course_id', 'sis_section_id', 'section_id', 'role', 'status']
+        columnHeaders = ['course_id', '>ENROLL_ID<', 'net_id', 'sis_course_id', 'sub-acct_id','sis_section_id', 'section_id', 'role', 'status']
         #
         for row in searchResults:
             course_id = row['course_id']
+            if row['sis_account_id']:
+                subAccountID = row['sis_account_id']
+            else: subAccountID = 'n/a'
             courseStatus = canvasCourseInfo(row['course_id'], canvasAPI, canvasAuth)
             if len(courseStatus) > 1:
-                tableTemp.append([row['course_id'], str(row['id']), row['sis_user_id'], row['sis_course_id'], row["sis_section_id"], int(row["course_section_id"]), row['role'], row['enrollment_state']])
+                tableTemp.append([row['course_id'], str(row['id']), row['sis_user_id'], row['sis_course_id'], subAccountID, row["sis_section_id"], int(row["course_section_id"]), row['role'], row['enrollment_state']])
                 canvasEnrollIDs.append(str(row['id']))
             else: continue
         tableTemp.sort(key=lambda x: x[3])
