@@ -49,10 +49,10 @@ def canvasEnrollmentEdit(enrollID, canvasAPI, canvasAuth, row, enrollmentNewStat
         enrollModify = requests.delete(delURL, params=files, headers=canvasAuth).json()
     else:
         params = {"enrollment[user_id]":canvasUserID,
-                  "enrollment[type]":row[6],
+                  "enrollment[type]":row[7],
                   "enrollment[enrollment_state]":enrollmentNewStatus,
                   "enrollment[notify]":False,
-                  "enrollment[course_section_id]":row[5],
+                  "enrollment[course_section_id]":row[6],
                   }
         url = f"{canvasAPI}courses/{row[0]}/enrollments"
         print()
@@ -163,7 +163,7 @@ while True:
             input("> Press <enter> to continue resetting all non-active enrollments to 'completed'...")
             print()
             for row in tableTemp:
-                if row[7] == 'active': continue
+                if row[8] == 'active': continue
                 else:
                     enrollmentNewStatus = 'completed'
                     print(f'=== Updating: {row}')
@@ -215,7 +215,7 @@ while True:
             elif enrollmentNewStatus == 'd': enrollmentNewStatus = 'delete'
             else: enrollmentNewStatus == 'q'
             print('')
-            if enrollRestoreSelection != 'q' and enrollmentNewStatus != 'q' and enrollRestoreSelection in canvasEnrollIDs and enrollmentNewStatus != row[7]:
+            if enrollRestoreSelection != 'q' and enrollmentNewStatus != 'q' and enrollRestoreSelection in canvasEnrollIDs and enrollmentNewStatus != row[8]:
                 enrollConfirm = yesOrNo(f"Modify this enrollment from {row[7].upper()} to {enrollmentNewStatus.upper()}  status?  {enrollRestoreSelection}")
                 if enrollConfirm == True:
                     for row in tableTemp:
