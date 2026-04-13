@@ -4,6 +4,7 @@ import os, sys, csv, requests, datetime, time
 from pprint import pprint
 from datetime import date, timedelta
 from datetime import datetime
+from dateutil.relativedelta import relativedelta
 from email.mime.text import MIMEText
 sys.path.append("/var/lib/canvas-mgmt/bin")
 from canvasFunctions import realm
@@ -23,7 +24,6 @@ canvasToken = realm['canvasToken']
 canvasApi = realm['canvasApi']
 canvasUserTokensCSV = env['canvas.user.tokens']
 authHeader = {"Authorization": f"Bearer {canvasToken}"}
-#serviceAccts = ['84','94','109','7016','8994','125511','129156','132703','319151','319349','336978','355105','360354','377818','378454','381230','400969','417093','420084','426543','468041']
 serviceAccts = env['canvas.service.accounts'].split(',')
 columnHeader = ['canvas_id', 'netid', 'canvas_user', 'hint', 'created','expires', 'last_used', 'status']
 userTokens = []
@@ -138,8 +138,11 @@ def uploadToBox(targetFilePath, targetFileName, boxParentFolderID, boxFolderName
         print(f'!!! Error During BOX Actions: {e}')
 #
 def generateExpiryDate():
-    """Generates a date one year from today formatted as YYYY-MM-DD."""
-    oneYearFromToday = datetime.now() + timedelta(days=365)
+    """Updated to 4 month expiration from today formatted as YYYY-MM-DD."""
+    today = date.today()
+    futureDate = today + relativedelta(months=4)
+    return futureDate.strftime('%Y-%m-%d')
+    #oneYearFromToday = datetime.now() + timedelta(days=365)
     return oneYearFromToday.strftime('%Y-%m-%d')
 #
 canvasAllUsers = loadCanvasUsers(canvasUsersFilePath)
@@ -171,7 +174,6 @@ elif actionChoice == 'n':
         print()
     netID = input('Enter the NetID of the user or service account that will receive the token:  ')
     print()
-    #adminToken = getpass.getpass('Enter your SU admin token: ')
     adminToken = canvasToken
     adminAuth = {"Authorization": f"Bearer {adminToken}"}
     canvasUserInfo = canvasGetUserInfo(netID)
@@ -246,9 +248,6 @@ Token:  {newToken["visible_token"]}
             except BoxAPIException as e:
                 print(f'!!! Error During BOX Actions: {e}')
                 print()
-            #except Exception as e:
-            #    print(f'!!! Error During BOX Actions: {e}')
-            #    print()
             os.remove(tokenTempFile)
     else:
         print('Token NOT created.')
