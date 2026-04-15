@@ -25,6 +25,7 @@ canvasApi = realm['canvasApi']
 canvasUserTokensCSV = env['canvas.user.tokens']
 authHeader = {"Authorization": f"Bearer {canvasToken}"}
 serviceAccts = env['canvas.service.accounts'].split(',')
+#serviceAccts = []
 columnHeader = ['canvas_id', 'netid', 'canvas_user', 'hint', 'created','expires', 'last_used', 'status']
 userTokens = []
 tokenTempFolder = '/var/lib/canvas-mgmt/tmp'
@@ -69,8 +70,10 @@ def canvasListUserTokens(canvasUserTokensCSV, canvasAllUsers):
                 else:
                     createdDate = datetime.fromisoformat(line[6])
                     createdDate = datetime.strftime(createdDate, dateOnlyFormat)
-                    expiryDate = datetime.fromisoformat(line[7])
-                    expiryDate = datetime.strftime(expiryDate, dateOnlyFormat)
+                    if line[7] == 'never': expiryDate = line[7]
+                    else:
+                        expiryDate = datetime.fromisoformat(line[7])
+                        expiryDate = datetime.strftime(expiryDate, dateOnlyFormat)
                 if line[8] == 'never': lastUsedDate = line[8]
                 else:
                     lastUsedDate = datetime.fromisoformat(line[8])
@@ -79,7 +82,8 @@ def canvasListUserTokens(canvasUserTokensCSV, canvasAllUsers):
                     if canvasUserID == row[0]:
                         netID = row[1]
                         break
-                userTokens.append([canvasUserID, netID, canvasUser, tokenHint, createdDate, expiryDate, lastUsedDate, tempStatus])
+                if expiryDate == 'never' or datetime.strptime(expiryDate, dateOnlyFormat).date() >= date.today():
+                    userTokens.append([canvasUserID, netID, canvasUser, tokenHint, createdDate, expiryDate, lastUsedDate, tempStatus])
     # Remove duplicates from userTokens (keep first occurrence)
     seen = set()
     uniqueUserTokens = []
