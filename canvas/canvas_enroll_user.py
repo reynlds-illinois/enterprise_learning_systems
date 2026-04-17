@@ -19,7 +19,7 @@ answer = 'x'
 yesNo = ''
 canvasAPI = realm['canvasApi']
 canvasToken = realm['canvasToken']
-print(f'Connected to:  {canvasAPI}')
+#print(f'Connected to:  {canvasAPI}')
 params = {"per_page": 100}
 canvasAuth = {"Authorization": f"Bearer {canvasToken}"}
 while True:
