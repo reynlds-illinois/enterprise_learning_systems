@@ -48,18 +48,13 @@ netID = input    ("  > Enter the student's NetID: ")
 canvasUserInfo = canvasGetUserInfo(netID, canvasAPI, canvasAuth)
 canvasUserID = canvasUserInfo['id']
 print()
-courseID = input ('  > Enter the Course ID : ')
-canvasCourseInfo = canvasGetCourseInfo(courseID, canvasAuth, canvasAPI)
-canvasCourseID = canvasCourseInfo['id']
+courseIDsInput = input('  > Enter Course ID(s), comma-separated: ')
+courseIDs = [c.strip() for c in courseIDsInput.split(',') if c.strip()]
 print()
 #
 input('  > Press Enter to continue... ')
 #print()
 
-# Set up the report URL and file name
-reportURL = f'{canvasURL}/courses/{canvasCourseID}/users/{canvasUserID}/usage'
-targetFileName = f'tdx_{tdxTicket}_access_report.pdf'
-targetFilePath = f'{reportsPath}{targetFileName}'
 requestorEmailAddress = f'{requestorNetID}@illinois.edu'
 boxFolderName = f'tdx_{tdxTicket}'
 #
@@ -125,26 +120,27 @@ def student_access_report_export(driver, reportURL, targetFilePath):
         driver.save_screenshot("timeout_error.png")
         print("  !!! Screenshot saved as 'timeout_error.png'.")
 #
-def uploadToBox(targetFilePath, targetFileName, boxParentFolderID, boxFolderName, requestorEmailAddress):
+def createBoxFolder(boxParentFolderID, boxFolderName, requestorEmailAddress):
+    """Create the Box folder and share it with the requestor. Returns the folder ID."""
+    boxCreateTargetFolder = boxClient.folder(boxParentFolderID).create_subfolder(boxFolderName)
+    boxTargetFolderID = int(boxCreateTargetFolder['id'])
+    print('  = Successfully created the BOX target folder.')
+    print()
+    # share new BOX target folder with TDX requestor
+    boxClient.folder(boxTargetFolderID).collaborate_with_login(requestorEmailAddress, CollaborationRole.VIEWER)
+    boxSharedLink = f'https://uofi.box.com/folder/{boxTargetFolderID}'
+    print('  ==')
+    print(f'  == Folder successfully shared in BOX:  {boxSharedLink}')
+    print('  ==')
+    return boxTargetFolderID
+#
+def uploadFileToBox(targetFilePath, targetFileName, boxTargetFolderID):
+    """Upload a single file to an existing Box folder."""
     try:
-        # create target folder in BOX
-        boxCreateTargetFolder = boxClient.folder(boxParentFolderID).create_subfolder(boxFolderName)
-        boxTargetFolderID = int(boxCreateTargetFolder['id'])
-        print('  = Successfully created the BOX target folder.')
-        print()
-        # upload local CSV file to new BOX target folder
-        r = boxClient.folder(boxTargetFolderID).upload(targetFilePath, targetFileName)
-        #print(r)
-        print('  = Successfully uploaded the CSV to BOX.')
-        # share new BOX target folder with TDX requestor
-        x = boxClient.folder(boxTargetFolderID).collaborate_with_login(requestorEmailAddress,CollaborationRole.VIEWER)
-        boxSharedLink = f'https://uofi.box.com/folder/{boxTargetFolderID}'
-        print()
-        print('  ==')
-        print(f'  == Folder successfully shared in BOX:  {boxSharedLink}')
-        print('  ==')
+        boxClient.folder(boxTargetFolderID).upload(targetFilePath, targetFileName)
+        print(f'  = Successfully uploaded {targetFileName} to BOX.')
     except Exception as e:
-        print(f'!!! Error During BOX Actions: {e}')
+        print(f'!!! Error uploading {targetFileName} to BOX: {e}')
 #
 def main():
     """Main function to run the tests."""
@@ -153,10 +149,19 @@ def main():
         print()
         canvasLogin(driver, canvasUser, canvasPass, canvasAuthURL)
         print()
-        student_access_report_export(driver, reportURL, targetFilePath)
+        boxTargetFolderID = createBoxFolder(boxParentFolderID, boxFolderName, requestorEmailAddress)
         print()
-        uploadToBox(targetFilePath, targetFileName, boxParentFolderID, boxFolderName, requestorEmailAddress)
-        print()
+        for courseID in courseIDs:
+            canvasCourseInfo = canvasGetCourseInfo(courseID, canvasAuth, canvasAPI)
+            canvasCourseID = canvasCourseInfo['id']
+            reportURL = f'{canvasURL}/courses/{canvasCourseID}/users/{canvasUserID}/usage'
+            targetFileName = f'tdx_{tdxTicket}_CANVAS_{courseID}_access_report.pdf'
+            targetFilePath = f'{reportsPath}{targetFileName}'
+            print(f'  > Processing course {canvasCourseID}...')
+            student_access_report_export(driver, reportURL, targetFilePath)
+            print()
+            uploadFileToBox(targetFilePath, targetFileName, boxTargetFolderID)
+            print()
     finally:
         driver.quit()
         print(">>> Browser closed <<<.")
