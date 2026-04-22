@@ -155,7 +155,7 @@ def main():
             canvasCourseInfo = canvasGetCourseInfo(courseID, canvasAuth, canvasAPI)
             canvasCourseID = canvasCourseInfo['id']
             reportURL = f'{canvasURL}/courses/{canvasCourseID}/users/{canvasUserID}/usage'
-            targetFileName = f'tdx_{tdxTicket}_CANVAS_{courseID}_access_report.pdf'
+            targetFileName = f'tdx_{tdxTicket}_{netID}_{courseID}_access_report.pdf'
             targetFilePath = f'{reportsPath}{targetFileName}'
             print(f'  > Processing course {canvasCourseID}...')
             student_access_report_export(driver, reportURL, targetFilePath)
