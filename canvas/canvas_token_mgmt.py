@@ -238,7 +238,7 @@ Token:  {newToken["visible_token"]}
 ''')
                 # upload local CSV file to new BOX target folder
                 r = boxClient.folder(boxParentFolderID).upload(tokenTempFile, tokenTempFileName)
-                print(r)
+                #print(r)
                 newTokenFileID = r['id']
                 print('  = Successfully uploaded the TOKEN_FILE to BOX.')
                 # share new BOX target file with TDX requestor
