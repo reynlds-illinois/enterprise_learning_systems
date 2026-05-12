@@ -1,7 +1,6 @@
-#!/usr/bin/python
-# 
-import sys, requests, urllib, json, time, datetime, csv
+import sys, os, requests, urllib, json, time, datetime, smtplib, csv
 from datetime import date
+from email.mime.text import MIMEText
 sys.path.append("/var/lib/canvas-mgmt/bin")
 from canvasFunctions import *
 #logScriptStart()
@@ -12,6 +11,14 @@ loopDelay = 10
 today = str(date.today().strftime("%Y-%m-%d"))
 #
 def get_active_terms_from_csv(terms_csv_path):
+    """
+    Reads an enrollment terms CSV and returns a list of canvas_term_id values
+    for terms whose end_date is strictly after today (i.e., still active).
+    Terms with an end_date of today or earlier are skipped.
+    #
+    Expected CSV columns: canvas_term_id, term_id, start_date, end_date
+    Date format expected: YYYY-MM-DD
+    """
     active = []
     skipped = []
     try:
@@ -58,7 +65,9 @@ for canvas_term_id, term_id in activeTerms:
     print(f'  > Processing canvas_term_id: {canvas_term_id}  term_id: {term_id}')
     print()
     downloadFilePath = f'{canvasReportsPath}canvas_grades_{term_id}_{today}.csv'
-    params = {"parameters[enrollment_term_id]": f"{canvas_term_id}"}
+    params = {"parameters[enrollment_term_id]": f"{canvas_term_id}",
+              "parameters[include_enrollment_state]": True,
+              "parameters[enrollment_state]": "all"}
     #
     r = requests.post(reportURL, headers=headers, params=params).json()
     #
