@@ -11,6 +11,8 @@ KEY_COLS = ["student sis", "course id", "section id", "term sis"]
 #
 # Columns to compare for changes
 COMPARE_COLS = [
+    "current score",
+    "final score",
     "unposted current score",
     "unposted final score",
     "override score",
