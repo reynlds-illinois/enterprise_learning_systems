@@ -147,14 +147,23 @@ def main():
     parser = argparse.ArgumentParser(
         description="Compare two Canvas gradebook CSVs and report grade/score changes."
     )
-    parser.add_argument("old_csv", help="Path to the older/baseline CSV file")
-    parser.add_argument("new_csv", help="Path to the newer CSV file to compare against")
+    parser.add_argument("old_csv", nargs="?", default=None, help="Path to the older/baseline CSV file")
+    parser.add_argument("new_csv", nargs="?", default=None, help="Path to the newer CSV file to compare against")
     parser.add_argument(
         "-o", "--output",
         help="Output CSV report path. Defaults to gradebook_changes_<timestamp>.csv in the same directory as new_csv.",
         default=None,
     )
     args = parser.parse_args()
+    #
+    if not args.old_csv:
+        print()
+        args.old_csv = input("  > Enter path to the older/baseline CSV file: ").strip()
+        print()
+    if not args.new_csv:
+        print()
+        args.new_csv = input("  > Enter path to the newer CSV file to compare against: ").strip()
+        print()
     #
     if not os.path.isfile(args.old_csv):
         print(f"ERROR: File not found: {args.old_csv}")
