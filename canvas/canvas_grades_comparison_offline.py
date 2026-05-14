@@ -5,6 +5,10 @@ import sys
 import os
 import argparse
 from datetime import datetime
+from columnar import columnar
+#
+# Default directory where gradebook CSV files are stored
+DEFAULT_REPORT_DIR = "/var/lib/canvas-mgmt/reports/enrollments/"
 #
 # Columns that uniquely identify an enrollment
 KEY_COLS = ["student sis", "course id", "section id", "term sis"]
@@ -71,10 +75,13 @@ def compare(old_rows: dict, new_rows: dict) -> list[dict]:
     #
     for key in sorted(all_keys):
         student_sis, course_id, section_id, term_sis = key
+        row_ref = (old_rows if key in old_rows else new_rows)[key]
         base = {
             "student sis": student_sis,
             "course id": course_id,
+            "course sis": row_ref.get("course sis", ""),
             "section id": section_id,
+            "section sis": row_ref.get("section sis", ""),
             "term sis": term_sis,
         }
         #
@@ -103,38 +110,37 @@ def compare(old_rows: dict, new_rows: dict) -> list[dict]:
     return changes
 #
 def print_changes(changes: list[dict]) -> None:
-    """Print a human-readable summary to the terminal."""
+    """Print a grid summary of changes to the terminal using columnar."""
     if not changes:
         print("\nNo changes detected between the two files.")
         return
     #
-    print(f"\n{'='*80}")
-    print(f"  CHANGES DETECTED: {len(changes)} field change(s)")
-    print(f"{'='*80}\n")
+    print(f"\n  CHANGES DETECTED: {len(changes)} field change(s)\n")
     #
-    current_key = None
-    for c in changes:
-        key = (c["student sis"], c["course id"], c["section id"], c["term sis"])
-        if key != current_key:
-            current_key = key
-            print(f"  Student SIS : {c['student sis']}")
-            print(f"  Course ID   : {c['course id']}")
-            print(f"  Section ID  : {c['section id']}")
-            print(f"  Term SIS    : {c['term sis']}")
-        #
-        if c["change type"] == "added":
-            print(f"    [ADDED enrollment]")
-        elif c["change type"] == "removed":
-            print(f"    [REMOVED enrollment]")
-        else:
-            print(f"    {c['field']:<35}  {c['old value']!r:>15}  -->  {c['new value']!r}")
+    headers = ["student sis", "course id", "course sis", "section id", "section sis", "term sis", "change type", "field", "old value", "new value"]
+    data = [
+        [
+            c["student sis"],
+            c["course id"],
+            c["course sis"],
+            c["section id"],
+            c["section sis"],
+            c["term sis"],
+            c["change type"],
+            c["field"],
+            c["old value"],
+            c["new value"],
+        ]
+        for c in changes
+    ]
     #
-    print()
+    table = columnar(data, headers, no_borders=True)
+    print(table)
 #
 def write_csv_report(changes: list[dict], output_path: str) -> None:
     """Write the changes to a CSV file."""
     fieldnames = [
-        "student sis", "course id", "section id", "term sis",
+        "student sis", "course id", "course sis", "section id", "section sis", "term sis",
         "change type", "field", "old value", "new value",
     ]
     with open(output_path, "w", newline="", encoding="utf-8") as f:
@@ -158,11 +164,13 @@ def main():
     #
     if not args.old_csv:
         print()
-        args.old_csv = input("  > Enter path to the older/baseline CSV file: ").strip()
+        filename = input(f"  > Enter filename of the older/baseline CSV ({DEFAULT_REPORT_DIR}): ").strip()
+        args.old_csv = os.path.join(DEFAULT_REPORT_DIR, filename)
         print()
     if not args.new_csv:
         print()
-        args.new_csv = input("  > Enter path to the newer CSV file to compare against: ").strip()
+        filename = input(f"  > Enter filename of the newer CSV ({DEFAULT_REPORT_DIR}): ").strip()
+        args.new_csv = os.path.join(DEFAULT_REPORT_DIR, filename)
         print()
     #
     if not os.path.isfile(args.old_csv):
