@@ -14,7 +14,11 @@ echo "$now | canvas-mgmt | cd2_dbsync.sh" >> $logFile
 # activate python virtual env
 source /var/lib/canvas-mgmt/python39-venv/bin/activate
 # grab table listing
-TABLE_NAMES=$(dap list --namespace canvas)
+#
+TABLE_NAMES_RAW=$(dap list --namespace canvas)
+TABLE_NAMES="${TABLE_NAMES_RAW#*": "}"
+TABLE_NAMES="${TABLE_NAMES//,/ }"
+#
 echo $TABLE_NAMES | tee -a $cd2LogFile
 sleep 2
 # loop through tables to sync them one at a time
@@ -24,7 +28,7 @@ do
     now=$today" "$(date +%T)
     echo "    = $now" | tee -a $cd2LogFile
     echo "    = Starting syncdb:  $TABLE" | tee -a $cd2LogFile
-    echo "    = Command used: dap --loglevel debug --logfile $cd2LogFile syncdb --namespace canvas --table $TABLE" | tee -a $cd2LogFile
+    echo "    = Command used: dap --loglevel error --logfile $cd2LogFile syncdb --namespace canvas --table $TABLE" | tee -a $cd2LogFile
     dap --loglevel debug --logfile "$cd2LogFile" syncdb --namespace canvas --table "$TABLE"
     sleep 2
     echo "==================================================" | tee -a $cd2LogFile
