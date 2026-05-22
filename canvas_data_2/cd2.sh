@@ -49,8 +49,10 @@ echo "$now | canvas-mgmt | cd2_$CD2_ACTION.sh" >> $logFile
 source /var/lib/canvas-mgmt/python312-venv/bin/activate
 
 # Grab the current table names
-mapfile -t TABLE_NAMES < <(dap list --namespace canvas)
-echo "${TABLE_NAMES[@]}" | tee -a $cd2LogFile
+TABLE_NAMES_RAW=$(dap list --namespace canvas)
+TABLE_NAMES="${TABLE_NAMES_RAW#*": "}"
+TABLE_NAMES="${TABLE_NAMES//,/ }"
+#
 sleep 2
 
 # Now go do that voodoo that you do so well!!!
