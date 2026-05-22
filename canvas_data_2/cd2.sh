@@ -53,6 +53,7 @@ TABLE_NAMES_RAW=$(dap list --namespace canvas)
 TABLE_NAMES="${TABLE_NAMES_RAW#*": "}"
 TABLE_NAMES="${TABLE_NAMES//,/ }"
 #
+echo $TABLE_NAMES | tee -a $cd2LogFile
 sleep 2
 
 # Now go do that voodoo that you do so well!!!
