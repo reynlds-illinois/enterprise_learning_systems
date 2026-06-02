@@ -53,7 +53,7 @@ def get_active_terms_from_csv(terms_csv_path):
     return active
 #
 activeTerms = get_active_terms_from_csv("/var/lib/canvas-mgmt/config/canvas_terms.csv")
-canvasReportsPath = str('/var/lib/canvas-mgmt/reports/enrollments/')
+canvasReportsPath = str('/var/lib/canvas-mgmt/reports/grades/')
 #
 canvasEndpoint = f"accounts/1/reports/grade_export_csv"
 reportURL = f"{canvasApi}{canvasEndpoint}"
