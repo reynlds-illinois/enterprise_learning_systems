@@ -90,7 +90,7 @@ print(f"  = UIN:    {uin}")
 print(f"  = Email:  {email}")
 print()
 
-confirm = input("Confirm creation (y/n)?  ").strip().lower()
+confirm = input("> Proceed with user creation in Canvas (y/n)?  ").strip().lower()
 if confirm != 'y':
     print()
     print("  >>> Cancelled. No user was created.")
