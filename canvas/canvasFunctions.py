@@ -1,19 +1,4 @@
 #---------------------------------------------------------
-# Read a CSV file and return a list of lists
-#---------------------------------------------------------
-
-def csv2List(filepath):
-    '''Read a CSV file and return a list of lists.'''
-    import csv, os, sys
-    data = []
-    with open(filepath, mode="r", newline="", encoding="utf-8") as csvFile:
-        reader = csv.reader(csvFile)
-        for row in reader:
-            data.append(row)
-    return data
-
-
-#---------------------------------------------------------
 # Pagination handling for Canvas API
 #---------------------------------------------------------
 
@@ -174,7 +159,7 @@ def chooseEnv():
     envOptions = {'canvasApi':'', 'canvasWriteToken':'', 'canvasReadToken': '', 'sraDbUser':'', 'sraDbPass':'', 'sraDbHost':'', 'sraDbSid':'', 'sraDbPort':1521, 'envLabel':'', 'canvasUrl':'', 'canvasUrbanaID':'', 'canvasTerms':''}
     env = ''
     print('')
-    while env != 'p' and env != 's' and env != 'c':
+    while env != 'p' and env != 's' and env != 'c' and env != 'i':
         env = input('Please enter the realm to use: (p)rod, (s)tage or (c)loud-DEV (SRA): ').lower().strip()
         if env == 'p':    #PRODUCTION
             envOptions['canvasApi'] = envDict['canvas.api-prod']
@@ -196,6 +181,10 @@ def chooseEnv():
             envOptions['sraDbPort'] = 1521
             envOptions['sraDbSid'] = envDict['req-stage.db.sid']
             envOptions['envLabel'] = 'STAGE'
+        elif env == 'i':  # INT
+            envOptions['canvasApi'] = envDict['canvas.api-int']
+            envOptions['canvasToken'] = envDict['canvas.token-int']
+            envOptions['envLabel'] = 'INT'
         else:             # SRA CLOUD-DEV
             envOptions['dbUser'] = envDict['req-cloud-dev.db.user']
             envOptions['dbPass'] = envDict['req-cloud-dev.db.pass']
@@ -206,7 +195,9 @@ def chooseEnv():
         envOptions['canvasUrl'] = envOptions['canvasApi'].strip('api/v1/')
         envOptions['canvasUrbanaID'] = '1'
         envOptions['canvasTerms'] = envDict['canvas.terms'].split(',')
-        print('')
+    print()
+    print(f">>> Connected to {envOptions['canvasApi']} <<<")
+    print()
     return envOptions
 
 
@@ -219,10 +210,11 @@ def realm():
     realmInput = ''
     realmOptions = {}
     print('')
-    while realmInput != 'p' and realmInput != 'b' and realmInput != 't':
-        realmInput = input('Please enter the realm to use: (p)rod, (b)eta/dev or (t)est/dev: ').lower().strip()
+    while realmInput != 'p' and realmInput != 'b' and realmInput != 't' and realmInput != 'i':
+        realmInput = input('Please enter the realm to use: (p)rod, (b)eta/dev, (t)est/dev, (i)nt: ').lower().strip()
         if realmInput == 'p':    #PRODUCTION
             realmOptions['canvasApi'] = envDict['canvas.api-prod']
+            realmOptions['canvasQuizApi'] = envDict['canvas.quiz.api-prod']
             realmOptions['canvasToken'] = envDict['canvas.token']
             realmOptions['sraDbUser'] = envDict['req-prod.db.user']
             realmOptions['sraDbPass'] = envDict['req-prod.db.pass']
@@ -233,8 +225,13 @@ def realm():
             realmOptions['canvasUrl'] = envDict['canvas.api-prod'].strip('api/v1/')
             realmOptions['crHost'] = envDict['class.rosters.host']
             realmOptions['crXapikey'] = envDict['class.rosters.xapi']
+            realmOptions['shKey'] = envDict['sh.all.key']
+            realmOptions['shServiceID'] = envDict['sh.prod.serviceid']
+            realmOptions['shSubdomain'] = envDict['sh.prod.subdomain']
+            realmOptions['shAcctSubdomain'] = envDict['sh.acct.subdomain']
         elif realmInput == 'b':  #DEV/BETA
             realmOptions['canvasApi'] = envDict['canvas.api-beta']
+            realmOptions['canvasQuizApi'] = envDict['canvas.quiz.api-beta']
             realmOptions['canvasToken'] = envDict['canvas.token']
             realmOptions['sraDbUser'] = envDict['req-stage.db.user']
             realmOptions['sraDbPass'] = envDict['req-stage.db.pass']
@@ -245,8 +242,26 @@ def realm():
             realmOptions['canvasUrl'] = envDict['canvas.api-beta'].strip('api/v1/')
             realmOptions['crHost'] = envDict['class.rosters.host']
             realmOptions['crXapikey'] = envDict['class.rosters.xapi']
+            realmOptions['shKey'] = envDict['sh.all.key']
+            realmOptions['shServiceID'] = envDict['sh.dev.serviceid']
+            realmOptions['shSubdomain'] = envDict['sh.dev.subdomain']
+            realmOptions['shAcctSubdomain'] = envDict['sh.acct.subdomain']
+        elif realmInput == 'i': #INT
+            realmOptions['canvasApi'] = envDict['canvas.api-int']
+            realmOptions['canvasQuizApi'] = envDict['canvas.quiz.api-int']
+            realmOptions['canvasToken'] = envDict['canvas.token-int']
+            #realmOptions['sraDbUser'] = envDict['req-stage.db.user']
+            #realmOptions['sraDbPass'] = envDict['req-stage.db.pass']
+            #realmOptions['sraDbHost'] = envDict['req-stage.db.sys']
+            #realmOptions['sraDbPort'] = 1521
+            #realmOptions['sraDbSid'] = envDict['req-stage.db.sid']
+            realmOptions['envLabel'] = 'CANVAS-INT'
+            realmOptions['canvasUrl'] = envDict['canvas.api-int'].strip('api/v1/')
+            #realmOptions['crHost'] = envDict['class.rosters.host']
+            #realmOptions['crXapikey'] = envDict['class.rosters.xapi']
         else:                    #TEST/BETA
             realmOptions['canvasApi'] = envDict['canvas.api-test']
+            realmOptions['canvasQuizApi'] = envDict['canvas.quiz.api-test']
             realmOptions['canvasToken'] = envDict['canvas.token']
             realmOptions['sraDbUser'] = envDict['req-stage.db.user']
             realmOptions['sraDbPass'] = envDict['req-stage.db.pass']
@@ -257,10 +272,16 @@ def realm():
             realmOptions['canvasUrl'] = envDict['canvas.api-test'].strip('api/v1/')
             realmOptions['crHost'] = envDict['class.rosters.host']
             realmOptions['crXapikey'] = envDict['class.rosters.xapi']
+            realmOptions['shKey'] = envDict['sh.all.key']
+            realmOptions['shServiceID'] = envDict['sh.dev.serviceid']
+            realmOptions['shSubdomain'] = envDict['sh.dev.subdomain']
+            realmOptions['shAcctSubdomain'] = envDict['sh.acct.subdomain']
         realmOptions['canvasUrbanaID'] = '1'
         realmOptions['canvasTerms'] = envDict['canvas.terms'].split(',')
         realmOptions['canvasAccountId'] = '1'
-        print('')
+        print()
+        print(f">>> Connected to {realmOptions['canvasApi']}")
+        print()
     return realmOptions
 
 
@@ -278,7 +299,7 @@ def crnLookup(crHost, crXapikey, termCode, crn):
 
 
 #---------------------------------------------------------
-# Log the initiation of a script fun and who did it
+# Log the initiation of a script run and who did it
 #---------------------------------------------------------
 
 def logScriptStart():
@@ -293,6 +314,29 @@ def logScriptStart():
         os.mknod(logFile)
     with open(logFile, 'a') as targetLog:
         targetLog.write(f"{now} | {currentUser} | {scriptName}" + "\n")
+
+
+#---------------------------------------------------------
+# look up a NetID based on Canvas User ID input
+#---------------------------------------------------------
+
+def canvasGetNetID(canvasUserID):
+    import csv, os, sys
+    with open('/var/lib/canvas-mgmt/config/canvas_users.csv', 'r') as csvFile:
+        reader = csv.reader(csvFile)
+        for row in reader:
+            if row[0] == canvasUserID:
+                #print()
+                #print(f'  > Canvas User ID:  {row[0]}')
+                #print(f'  > UIUC NetID:      {row[1]}')
+                #print(f'  > UIUC UIN:        {row[2]}')
+                #print(f'  > Display Name:    {row[7]}')
+                #print(f'  > Email Address:   {row[10]}')
+                #print()
+                return row
+            else:
+                continue
+        return "False"
 
 
 #---------------------------------------------------------
@@ -316,6 +360,61 @@ def canvasGetUserInfo(netID):
             else:
                 continue
         return "False"
+
+
+
+def canvasGetUserInfoLive(searchTerm, canvasAPI, canvasAuth):
+    """
+    Fetch user information from Canvas using the REST API.
+    Returns the first exact match for NetID, UIN, or Email, or None if not found.
+    """
+    import requests, urllib, json
+    canvasEndpoint = f"accounts/1/users"
+    if searchTerm:
+        canvasEndpoint += f"?search_term={searchTerm}"
+    url = urllib.parse.urljoin(canvasAPI, canvasEndpoint)
+    params = {"per_page": 100, "include[]": ["email", "last_login"]}
+    #
+    try:
+        response = requests.get(url, headers=canvasAuth, params=params)
+        if response.status_code != 200:
+            print(f"Error: Canvas API request failed with status {response.status_code}")
+            return None
+        searchResults = response.json()
+        if not isinstance(searchResults, list):
+            print("Error: Unexpected response format from Canvas API.")
+            return None
+        while 'next' in response.links:
+            response = requests.get(response.links['next']['url'], headers=headers, params=params)
+            searchResults.extend(response.json())
+        # Only return the first exact match (by NetID, UIN, or Email)
+        if response is None:
+            print("User is not found in Canvas.")
+            print()
+            return None
+        for user in searchResults:
+            if (
+                user.get("login_id", "").lower() == searchTerm.lower()
+                or user.get("sis_user_id", "").lower() == searchTerm.lower()
+                or user.get("integration_id", "").lower() == searchTerm.lower()
+                or user.get("email", "").lower() == searchTerm.lower()
+            ):
+                print()
+                print("  > Canvas ID:      ", user.get("id"))
+                print("  > UIN:            ", user.get("integration_id"))
+                print("  > Name:           ", user.get("name"))
+                print("  > Sortable Name:  ", user.get("sortable_name"))
+                print("  > NetID:          ", user.get("sis_user_id"))
+                print("  > Email:          ", user.get("email"))
+                print("  > Created At:     ", user.get("created_at"))
+                print("  > Last Login:     ", user.get("last_login"))
+                print()
+                return user
+    except Exception as e:
+        print("Error fetching user info from Canvas:")
+        print(f"Error: {e}")
+        print()
+        return None
 
 
 #---------------------------------------------------------
@@ -372,11 +471,29 @@ def batchLookupReg(crHost, crXapikey, termcode: str, crns: list) -> dict:
 
 
 #---------------------------------------------------------
-# connect to a SQL database
+# connect to a SQL database using sqlalchemy
+#---------------------------------------------------------
+
+def connect2SQL(dbUser, dbPass, dbHost, dbPort, dbSid):
+    '''Create a connection to a SQL database using SQLAlchemy.'''
+    from sqlalchemy import create_engine
+    from sqlalchemy.exc import SQLAlchemyError
+    try:
+        connection_string = f"oracle+cx_oracle://{dbUser}:{dbPass}@{dbHost}:{dbPort}/?service_name={dbSid}"
+        engine = create_engine(connection_string)
+        connection = engine.connect()
+        return connection
+    except SQLAlchemyError as e:
+        print(f"Database connection error: {e}")
+        return None
+
+
+#---------------------------------------------------------
+# connect to a SQL database using cx_Oracle
 #---------------------------------------------------------
 
 def connect2Sql(dbUser, dbPass, dbHost, dbPort, dbSid):
-    '''Create a connection to a SQL database.'''
+    '''Create a connection to a SQL database cx_Oracle.'''
     import cx_Oracle
     try:
         oraConn = cx_Oracle.connect(f"{dbUser}/{dbPass}@{dbHost}:{dbPort}/{dbSid}")
@@ -470,6 +587,42 @@ def findCanvasCourse(courseId):
             print(f'  > Course Status:      {row[9]}')
             print()
             return str(row[0])
+
+
+#---------------------------------------------------------
+# Returns course info using a live lookup
+#---------------------------------------------------------
+
+def canvasGetCourseInfo(sisCourseID, canvasAuth, canvasAPI):
+    """Returns Canvas course info based on SIS Course ID using a live lookup"""
+    import requests, json
+    from pprint import pprint
+    URL = f"{canvasAPI}courses/sis_course_id%3A{sisCourseID}"
+    response = requests.get(URL, headers=canvasAuth)
+    #print(len(response))
+    if response.status_code == 200 and len(response.text) > 1:
+        response = json.loads(response.text)
+        sisTerm = requests.get(f"{canvasAPI}accounts/1/terms/{response['enrollment_term_id']}", headers=canvasAuth).json()['sis_term_id']
+        sisAcct = requests.get(f"{canvasAPI}accounts/{response['account_id']}", headers=canvasAuth).json()['sis_account_id']
+        print()
+        print(f"  > Canvas Course ID:   {response['id']}")
+        print(f"  > SIS Course ID:      {response['sis_course_id']}")
+        print(f"  > SIS Course Title:   {response['name']}")
+        print(f"  > Canvas Sub-Account: {sisAcct}")
+        print(f"  > Banner Term ID:     {sisTerm}")
+        print(f"  > Course Created:     {response['created_at']}")
+        print(f"  > Course Start Date:  {response['start_at']}")
+        print(f"  > Course End Date:    {response['end_at']}")
+        print(f"  > Course Status:      {response['workflow_state']}")
+        print(f"  > Course View:        {response['default_view']}")
+        print(f"  > SIS Import ID:      {response['sis_import_id']}")
+        print()
+        return response
+    else:
+        print()
+        print(f'There was an issue obtaining course info on {sisCourseID}')
+        print()
+        return False
 
 
 #---------------------------------------------------------
