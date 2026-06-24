@@ -29,9 +29,10 @@ menuText=$(cat <<'EOF'
        (%) Canvas: Get All Student Completion Status in Course
        (=) Canvas: Move course dept/acct in Canvas and SRA
        (?) Canvas: Student Access Report (optional upload to BOX)
-       (f) Class Rosters: Get Course Memberships (PROD)
        (N) Canvas: Find New Quizzes in Course or Banner Term
        (H) Canvas: Course Content Copy to Another Course
+       (f) Class Rosters: Get Course Memberships (PROD)
+       (R) Class Rosters: Get CRN Information
 
     Canvas Course/User/Roster Management:
        (g) Canvas: Enrollment Info and Status Change (PROD/STAGE-Live)
@@ -41,6 +42,7 @@ menuText=$(cat <<'EOF'
        (@) Canvas: Move Registrar-enabled Course (also affects SRA placement)
        (Z) Canvas: Export Course as Zip, Qti or CC
        (T) Canvas: User Token Management for API
+       (U) Canvas: Create User in Canvas
 
     Canvas Data 2:
        (j) CD2: Postgres Query
@@ -93,7 +95,8 @@ do
         "$") executeCommand "~/bin/canvas_extend_course_for_single_student.sh" ;;
         "@") executeCommand "~/bin/canvas_sra_move_course.sh" ;;
         "Z") executeCommand "~/bin/canvas_export_course.sh" ;;
-        "T") executeCommand "~/bin/canvas_user_token_mgmt.sh" ;;
+        "T") executeCommand "~/bin/canvas_token_mgmt.sh" ;;
+        "U") executeCommand "~/bin/canvas_create_user.sh" ;;
         "j") executeCommand "~/bin/cd2_query_db.sh" ;;
         "k") executeCommand "~/bin/ad_user_info.sh" ;;
         "l") executeCommand "~/bin/ad_roster_by_crn_or_space.sh" ;;
@@ -110,6 +113,7 @@ do
         "w") executeCommand "~/bin/canvas_sis_uploads_info.sh" ;;
         "x") executeCommand "~/bin/canvas_objects_download.sh" ;;
         "!") executeCommand "~/bin/canvas_incident_mgmt.sh" ;;
+        "R") executeCommand "~/bin/cr_crn_info.sh" ;;
         "y") echo ""; eval crontab -e; pressKey ;;
         "z") echo "Starting Python 3.12 Virtual Development environment..."; echo ""; eval source ~/python312-venv/bin/activate; python; pressKey ;;
         "+") executeCommand "~/bin/generate_password.sh" ;;
