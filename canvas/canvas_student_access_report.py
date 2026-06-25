@@ -23,9 +23,9 @@ env = getEnv()
 realm = realm()
 canvasURL = realm['canvasUrl']
 jwtAuthFile = env['uofi.box.jwtauth.file']
-canvasUser = env['cm.user']
-canvasPass = env['cm.pass']
-canvasAuthURL = f'{canvasURL}/login/canvas'
+canvasUser = env['canvas.ro-user']
+canvasPass = env['canvas.ro-pass']
+canvasAuthURL = canvasURL
 canvasAPI = realm['canvasApi']
 canvasURL = realm['canvasUrl']
 canvasToken = realm['canvasToken']
@@ -70,22 +70,51 @@ def setup_browser():
     driver.implicitly_wait(3)
     return driver
 #
-def canvasLogin(driver, canvasUser, canvasPass, canvasAuthURL):
-    """Authenticate the user."""
-    driver.get(canvasAuthURL)
-    usernameField = driver.find_element(By.XPATH, '//*[@id="pseudonym_session_unique_id"]')
-    passwordField = driver.find_element(By.XPATH, '//*[@id="pseudonym_session_password"]')
-    submitButton = driver.find_element(By.XPATH, '/html/body/div[3]/div[2]/div/div/div[1]/div/div/div/div/div/div[2]/form[1]/div[3]/div[2]/input')
-
-    usernameField.send_keys(canvasUser)
-    passwordField.send_keys(canvasPass)
-    submitButton.click()
-
-    # Optionally, verify login success
-    WebDriverWait(driver, 10).until(
-        EC.presence_of_element_located((By.XPATH, '//*[@id="global_nav_profile_link"]'))
-    )
-    print("  = Login successful")
+def canvasLogin(driver, canvasUser, canvasPass, canvasURL):
+    try:
+        print('  = building DRIVER...')
+        driver.get(canvasURL)
+        print('  = DRIVER built successfully.')
+        print()
+    except Exception as e:
+        print(f'  >>> Error building DRIVER: {e}')
+        print()
+        return False
+    try:
+        usernameField = WebDriverWait(driver,10).until(EC.presence_of_element_located((By.CSS_SELECTOR, 'input[type="email"][aria-required="true"]')))
+        usernameField.clear()
+        usernameField.send_keys(canvasUser)
+        print('  = username added successfully.')
+        submitbtn = driver.find_element(By.ID,'idSIButton9')
+        submitbtn.click()
+        print('  = submit button clicked successfully.')
+        print()
+    except Exception as e:
+        print(f'  >>> Error adding username or clicking submit button: {e}')
+        print()
+    try:
+        passwordfield = WebDriverWait(driver,10).until(EC.presence_of_element_located((By.CSS_SELECTOR, 'input[type="password"][aria-required="true"]')))
+        passwordfield.clear()
+        passwordfield.send_keys(canvasPass)
+        print('  = password added successfully.')
+        submitbtn2 = driver.find_element(By.ID,'idSIButton9')
+        submitbtn2.click()
+        print('  = submit button clicked successfully.')
+        print()
+    except:
+        print('  >>> Error adding password or clicking submit button.')
+        print()
+    try:
+        print('  = waiting for URL to match canvasURL...')
+        WebDriverWait(driver,5).until(EC.url_matches('^' + canvasURL + '.*'))
+        return driver
+    except TimeoutException as e:
+        try:
+            if driver.find_element(By.CSS_SELECTOR,'div#externalAuthHeader'):
+                print('This user requires 2FA! Not the intended use!')
+        except:
+            print('Login FAILED!')
+        return False
 #
 def student_access_report_export(driver, reportURL, targetFilePath):
     """Scroll to load JavaScript content and export the page to a PDF."""
