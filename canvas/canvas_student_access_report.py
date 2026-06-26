@@ -39,10 +39,12 @@ boxParentFolderID = env['uofi.box.tdx.parent.folder']
 boxRequstorRole = 'Viewer'
 reportsPath = '/var/lib/canvas-mgmt/reports/'
 yesNo = ['y', 'n']
-
+#
 tdxTicket = input('  > Enter TDX ticket: ')
 print()
 requestorNetID = input('  > Enter the NetID of the TDX requestor: ')
+requestorEmailAddress = f'{requestorNetID}@illinois.edu'
+canvasGetUserInfo(requestorEmailAddress, canvasAPI, canvasAuth)
 print()
 netID = input    ("  > Enter the student's NetID: ")
 canvasUserInfo = canvasGetUserInfo(netID, canvasAPI, canvasAuth)
@@ -54,8 +56,8 @@ print()
 #
 input('  > Press Enter to continue... ')
 #print()
-
-requestorEmailAddress = f'{requestorNetID}@illinois.edu'
+#
+#requestorEmailAddress = f'{requestorNetID}@illinois.edu'
 boxFolderName = f'tdx_{tdxTicket}'
 #
 def setup_browser():
