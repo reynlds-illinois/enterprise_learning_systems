@@ -198,7 +198,7 @@ while True:
                     if "total_activity_time" not in enrollInfo:
                         print(f'    Total Activity:  n/a')
                     else:
-                        print(f'    Total Activity:  {enrollInfo["total_activity_time"]} minutes')
+                        print(f'    Total Activity:  {enrollInfo["total_activity_time"]} seconds')
                     print()
                     print('    Links for this enrollment which must be "completed" or "active" to use:')
                     print()
