@@ -191,6 +191,7 @@ while True:
                     print(f'    Sub-account:     {enrollInfo["sis_account_id"]}')
                     print(f'    Created:         {enrollInfo["created_at"]}')
                     print(f'    SIS Import ID:   {enrollInfo["sis_import_id"]}')
+                    enrollmentOrigStatus = enrollInfo["enrollment_state"]
                     if "last_activity_at" not in enrollInfo:
                         print(f'    Last Activity:   n/a')
                     else:
@@ -216,7 +217,7 @@ while True:
             else: enrollmentNewStatus == 'q'
             print('')
             if enrollRestoreSelection != 'q' and enrollmentNewStatus != 'q' and enrollRestoreSelection in canvasEnrollIDs and enrollmentNewStatus != row[8]:
-                enrollConfirm = yesOrNo(f"Modify this enrollment from {row[7].upper()} to {enrollmentNewStatus.upper()}  status?  {enrollRestoreSelection}")
+                enrollConfirm = yesOrNo(f"Modify this enrollment from {enrollmentOrigStatus.upper()} to {enrollmentNewStatus.upper()} status?  {enrollRestoreSelection}")
                 if enrollConfirm == True:
                     for row in tableTemp:
                         if row[1] == enrollRestoreSelection:
