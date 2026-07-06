@@ -42,11 +42,11 @@ yesNo = ['y', 'n']
 #
 tdxTicket = input('  > Enter TDX ticket: ')
 print()
-requestorNetID = input('  > Enter the NetID of the TDX requestor: ')
+requestorNetID = input('  > Enter the UIN, NetID or Illinois Email of the TDX requestor: ')
 requestorEmailAddress = f'{requestorNetID}@illinois.edu'
 canvasGetUserInfo(requestorEmailAddress, canvasAPI, canvasAuth)
 print()
-netID = input    ("  > Enter the student's NetID: ")
+netID = input    ("  > Enter the student's UIN, NetID or Illinois email address: ")
 canvasUserInfo = canvasGetUserInfo(netID, canvasAPI, canvasAuth)
 canvasUserID = canvasUserInfo['id']
 print()
