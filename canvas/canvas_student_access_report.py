@@ -74,9 +74,9 @@ def setup_browser():
 #
 def canvasLogin(driver, canvasUser, canvasPass, canvasURL):
     try:
-        print('  = building DRIVER...')
+        #print('  = building DRIVER...')
         driver.get(canvasURL)
-        print('  = DRIVER built successfully.')
+        print('  = WebDriver built successfully.')
         print()
     except Exception as e:
         print(f'  >>> Error building DRIVER: {e}')
@@ -86,11 +86,11 @@ def canvasLogin(driver, canvasUser, canvasPass, canvasURL):
         usernameField = WebDriverWait(driver,10).until(EC.presence_of_element_located((By.CSS_SELECTOR, 'input[type="email"][aria-required="true"]')))
         usernameField.clear()
         usernameField.send_keys(canvasUser)
-        print('  = username added successfully.')
+        #print('  = username added successfully.')
         submitbtn = driver.find_element(By.ID,'idSIButton9')
         submitbtn.click()
-        print('  = submit button clicked successfully.')
-        print()
+        #print('  = submit button clicked successfully.')
+        #print()
     except Exception as e:
         print(f'  >>> Error adding username or clicking submit button: {e}')
         print()
@@ -98,16 +98,16 @@ def canvasLogin(driver, canvasUser, canvasPass, canvasURL):
         passwordfield = WebDriverWait(driver,10).until(EC.presence_of_element_located((By.CSS_SELECTOR, 'input[type="password"][aria-required="true"]')))
         passwordfield.clear()
         passwordfield.send_keys(canvasPass)
-        print('  = password added successfully.')
+        #print('  = password added successfully.')
         submitbtn2 = driver.find_element(By.ID,'idSIButton9')
         submitbtn2.click()
-        print('  = submit button clicked successfully.')
-        print()
+        #print('  = submit button clicked successfully.')
+        #print()
     except:
         print('  >>> Error adding password or clicking submit button.')
         print()
     try:
-        print('  = waiting for URL to match canvasURL...')
+        print('  = matching canvasURL...please wait...')
         WebDriverWait(driver,5).until(EC.url_matches('^' + canvasURL + '.*'))
         return driver
     except TimeoutException as e:
