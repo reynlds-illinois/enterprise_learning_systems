@@ -16,11 +16,11 @@ from selenium.webdriver.common.by import By
 from selenium.webdriver.support import expected_conditions as EC
 from selenium.webdriver.support.wait import WebDriverWait
 from selenium.common.exceptions import TimeoutException
-
+#
 sys.path.append("/var/lib/canvas-mgmt/bin")
 from canvasFunctions import realm, getEnv, yesOrNo
 from canvasFunctions import canvasGetUserInfoLive as canvasGetUserInfo
-
+#
 DATE_FORMAT = "%Y-%m-%dT%H:%M:%S"
 REPORTS_PATH = "/var/lib/canvas-mgmt/reports/"
 ENROLLMENT_STATES = ["active", "inactive", "deleted", "completed", "invited"]
@@ -30,8 +30,7 @@ STATUS_MENU = {
     "i": "inactive",
     "d": "delete",
 }
-
-
+#
 def parse_canvas_datetime(value):
     if not value:
         return None
@@ -40,15 +39,13 @@ def parse_canvas_datetime(value):
         return datetime.fromisoformat(cleaned)
     except ValueError:
         return None
-
-
+#
 def require_input(prompt_text):
     value = ""
     while not value:
         value = input(prompt_text).strip()
     return value
-
-
+#
 def setup_browser():
     chrome_options = Options()
     chrome_options.add_argument("--headless")
@@ -59,8 +56,7 @@ def setup_browser():
     driver = webdriver.Chrome(options=chrome_options)
     driver.implicitly_wait(3)
     return driver
-
-
+#
 def canvas_login(driver, canvas_user, canvas_pass, canvas_url):
     try:
         driver.get(canvas_url)
@@ -94,12 +90,13 @@ def canvas_login(driver, canvas_user, canvas_pass, canvas_url):
     try:
         WebDriverWait(driver, 8).until(EC.url_matches("^" + canvas_url + ".*"))
         print("  = Canvas login completed.")
+        print()
         return True
     except TimeoutException:
         print("  >>> Canvas login failed or did not redirect in time.")
+        print()
         return False
-
-
+#
 def fetch_enrollments_for_term(canvas_user_id, term_code, canvas_api, canvas_auth):
     search_results = []
     enrollments_url = f"{canvas_api}users/{canvas_user_id}/enrollments?enrollment_term_id=sis_term_id%3A{term_code}"
@@ -138,8 +135,7 @@ def fetch_enrollments_for_term(canvas_user_id, term_code, canvas_api, canvas_aut
         dedupe[str(row.get("id"))] = row
 
     return list(dedupe.values())
-
-
+#
 def build_enrollment_rows(search_results):
     rows = []
     for row in search_results:
@@ -164,8 +160,7 @@ def build_enrollment_rows(search_results):
 
     rows.sort(key=lambda x: (x.get("sis_course_id") or "", x.get("enroll_id") or ""))
     return rows
-
-
+#
 def print_enrollment_table(rows):
     table_rows = []
     headers = [
@@ -198,13 +193,12 @@ def print_enrollment_table(rows):
     print()
     print(columnar(table_rows, headers, no_borders=True))
     print()
-
-
+#
 def choose_status_for_enrollment(enrollment_id, current_status):
     while True:
         prompt = (
-            f"New status for enrollment {enrollment_id} (a=active, c=completed, i=inactive, d=delete, q=skip) "
-            f"[current={current_status}]: "
+            f"  > New status for enrollment ID {enrollment_id} (a=Active, c=Completed, i=Inactive, d=Deleted, q=Skip) "
+            f"  > [current={current_status}]: "
         )
         choice = input(prompt).strip().lower()
         if choice == "q":
@@ -212,28 +206,35 @@ def choose_status_for_enrollment(enrollment_id, current_status):
         if choice in STATUS_MENU:
             return STATUS_MENU[choice]
         print("  >>> Invalid status choice. Please enter a, c, i, d, or q.")
-
-
+        print()
+#
 def plan_enrollment_changes(rows):
     by_id = {row["enroll_id"]: row for row in rows}
     deleted_rows = [row for row in rows if row["status"] == "deleted"]
     plan = {}
 
     if deleted_rows:
-        print(f"  = Found {len(deleted_rows)} deleted enrollment(s) in this term.")
-        if yesOrNo("Auto-plan all deleted enrollments to COMPLETED before custom selection?"):
+        print(f"  > Found {len(deleted_rows)} deleted enrollment(s) in this term.")
+        print()
+        if yesOrNo("  > Convert all deleted enrollments to COMPLETED before custom selection?"):
             for row in deleted_rows:
                 plan[row["enroll_id"]] = "completed"
             print("  = Added deleted enrollments to the change plan with status COMPLETED.")
+            print()
         else:
-            print("  = Skipping auto-plan for deleted enrollments.")
+            print("  = Skipping conversion for deleted enrollments.")
+            print()
 
     print()
     print("  > You can now add or override specific enrollment changes.")
+    print()
     print("  > Enter enrollment IDs as comma-separated values. Press Enter to stop adding IDs.")
+    print()
 
     while True:
-        selection = input("Enrollment ID(s) to modify (blank to finish): ").strip()
+        print()
+        selection = input("  > Enrollment ID(s) to modify (blank to finish): ").strip()
+        #print()
         if not selection:
             break
 
@@ -284,8 +285,7 @@ def plan_enrollment_changes(rows):
         return []
 
     return [{"enroll_id": enroll_id, "new_status": new_status, "row": by_id[enroll_id]} for enroll_id, new_status in plan.items()]
-
-
+#
 def canvas_enrollment_edit(enroll_id, canvas_api, canvas_auth, row, enrollment_new_status, canvas_user_id, sleep_delay=1):
     reset_date = False
     original_end_date = None
@@ -355,8 +355,7 @@ def canvas_enrollment_edit(enroll_id, canvas_api, canvas_auth, row, enrollment_n
                 requests.put(course_url, headers=canvas_auth, params=restore_params)
             except Exception as ex:
                 print(f"  >>> Failed to restore original course end date for {course_id}: {ex}")
-
-
+#
 def student_access_report_export(driver, report_url, target_file_path):
     try:
         driver.get(report_url)
@@ -380,8 +379,7 @@ def student_access_report_export(driver, report_url, target_file_path):
         return False, "Timeout waiting for Canvas report content"
     except Exception as ex:
         return False, str(ex)
-
-
+#
 def create_box_folder_and_share(box_client, parent_folder_id, folder_name, requestor_email):
     try:
         box_folder = box_client.folder(parent_folder_id).create_subfolder(folder_name)
@@ -407,16 +405,14 @@ def create_box_folder_and_share(box_client, parent_folder_id, folder_name, reque
     shared_link = f"https://uofi.box.com/folder/{folder_id}"
 
     return folder_id, folder_name, shared_link
-
-
+#
 def upload_file_to_box(box_client, folder_id, target_file_path, target_file_name):
     try:
         box_client.folder(folder_id).upload(target_file_path, target_file_name)
         return True, None
     except Exception as ex:
         return False, str(ex)
-
-
+#
 def get_illinois_email(user_info):
     email = (user_info.get("email") or "").strip().lower()
     if email.endswith("@illinois.edu"):
@@ -427,8 +423,7 @@ def get_illinois_email(user_info):
         return f"{sis_user_id}@illinois.edu"
 
     return ""
-
-
+#
 def main():
     print("")
     env = getEnv()
@@ -451,6 +446,7 @@ def main():
 
     # Gather required request metadata before processing anything.
     tdx_ticket = require_input("  > Enter TDX support request number: ")
+    print()
 
     requestor_search = require_input("  > Enter the UIN, NetID or Illinois Email of the support requestor: ")
     requestor_info = canvasGetUserInfo(requestor_search, canvas_api, canvas_auth)
@@ -497,7 +493,7 @@ def main():
     print_enrollment_table(rows)
     planned_changes = plan_enrollment_changes(rows)
     if not planned_changes:
-        if not yesOrNo("No enrollment changes are planned. Continue to report generation anyway?"):
+        if not yesOrNo("  > No enrollment changes are planned. Continue to report generation anyway?"):
             print("\n>>> Exiting with no changes made.\n")
             return
 
@@ -538,7 +534,7 @@ def main():
             if not changed_rows:
                 print(">>> No enrollment changes succeeded. Cannot proceed to report generation for changed enrollments.\n")
                 return
-            if not yesOrNo("Continue to report generation using only successful enrollment changes?"):
+            if not yesOrNo("  > Continue to report generation using only successful enrollment changes?"):
                 print("\n>>> Exiting by user request after partial enrollment failures.\n")
                 return
 
@@ -548,7 +544,7 @@ def main():
         unique_target_rows[str(row["course_id"])] = row
     report_rows = list(unique_target_rows.values())
 
-    print("\n  = Preparing BOX destination...\n")
+    print("\n  > Preparing BOX destination...\n")
     try:
         box_auth = JWTAuth.from_settings_file(box_jwt_auth_file)
         box_client = Client(box_auth)
@@ -570,7 +566,7 @@ def main():
         print(f">>> Failed to create/share BOX folder: {ex}\n")
         return
 
-    print("\n  = Launching browser and logging into Canvas for report exports...\n")
+    print("\n  > Launching browser and logging into Canvas for report exports...\n")
     driver = None
     upload_success_count = 0
     upload_failures = []
@@ -591,19 +587,24 @@ def main():
             target_file_path = os.path.join(REPORTS_PATH, target_file_name)
 
             print(f"  > Generating report for course {course_id} (enrollment {enroll_id})...")
+            print()
             ok, err = student_access_report_export(driver, report_url, target_file_path)
             if not ok:
                 print(f"  >>> Failed to export report for course {course_id}: {err}")
+                print()
                 upload_failures.append({"course_id": course_id, "reason": f"export failed: {err}"})
                 continue
 
             print(f"  = Report exported: {target_file_path}")
+            print()
             ok, err = upload_file_to_box(box_client, box_folder_id, target_file_path, target_file_name)
             if ok:
                 upload_success_count += 1
                 print(f"  = Uploaded to BOX: {target_file_name}")
+                print()
             else:
                 print(f"  >>> Failed to upload {target_file_name} to BOX: {err}")
+                print()
                 upload_failures.append({"course_id": course_id, "reason": f"upload failed: {err}"})
             print("")
 
@@ -614,22 +615,24 @@ def main():
             driver.quit()
             print("  = Browser closed.")
 
-    print("\n=== PROCESS SUMMARY ===")
-    print(f"TDX ticket:           {tdx_ticket}")
-    print(f"Requestor email:      {requestor_email}")
-    print(f"Student NetID:        {student_net_id}")
-    print(f"Term code:            {term_code}")
-    print(f"Reports uploaded:     {upload_success_count}")
-    print(f"Report failures:      {len(upload_failures)}")
+    print("\n    === PROCESS SUMMARY ===")
+    print(f"  > TDX ticket:           {tdx_ticket}")
+    print(f"  > Requestor email:      {requestor_email}")
+    print(f"  > Student NetID:        {student_net_id}")
+    print(f"  > Term code:            {term_code}")
+    print(f"  > Reports uploaded:     {upload_success_count}")
+    print(f"  > Report failures:      {len(upload_failures)}")
     if upload_failures:
+        print()
         for failure in upload_failures:
             print(f"  - Course {failure['course_id']}: {failure['reason']}")
 
     print("")
-    print("Share this BOX link with the requestor:")
-    print(shared_link)
-    print("")
-
-
+    print("  > Share this BOX link with the requestor:")
+    print()
+    print('  ===')
+    print(f"  === {shared_link}")
+    print("  ===")
+#
 if __name__ == "__main__":
     main()
