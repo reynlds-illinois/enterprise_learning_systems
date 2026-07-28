@@ -11,7 +11,7 @@ from canvasFunctions import realm
 env = getEnv()
 #
 # this will be the Canvas API base URL
-canvasAPI = 'https://illinoisedu.beta.instructure.com/api/v1'
+canvasAPI = 'https://canvas.myschool.edu/api/v1'
 # this is a user token with sufficient privileges to manage course enrollments
 canvasToken = env['canvas.token']
 # this is a mashup for use with requests library headers
