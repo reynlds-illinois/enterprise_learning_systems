@@ -259,7 +259,7 @@ Token:  {newToken["visible_token"]}
                 print('| Please note that any use of a Canvas API token is subject to the')
                 print('| University of Illinois Appropriate Use of Information and Technology')
                 print('| Resources, and that you are responsible for any actions taken with this')
-                print('| token. This policy can be found within the Campus Adminsitrative Manual here:')
+                print('| token. This policy can be found within the Campus Administrative Manual here:')
                 print('|')
                 print('| https://cam.illinois.edu/policies/fo-07/')
                 print("|----------------------------------------------------------------------")
