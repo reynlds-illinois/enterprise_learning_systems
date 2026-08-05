@@ -161,7 +161,7 @@ def generateExpiryDate():
         #oneYearFromToday = datetime.now() + timedelta(days=365)
         #return oneYearFromToday.strftime('%Y-%m-%d')
         today = date.today()
-        futureDate = today + relativedelta(months=4)
+        futureDate = today + relativedelta(days=30)
         newExpiryDate = futureDate.strftime('%Y-%m-%d')
     return newExpiryDate
 #
