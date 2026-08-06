@@ -263,9 +263,9 @@ Token:  {newToken["visible_token"]}
                 print('|')
                 print('| https://cam.illinois.edu/policies/fo-07/')
                 print('|')
-                print('| Also, as of August, 2026, newly issued user tokens will have a 30-day
-                print('| expiration. This is due to restrictions placed on us by Instructure,
-                print('| the makers of Canvas.
+                print('| Also, as of August, 2026, newly issued user tokens will have a 30-day')
+                print('| expiration. This is due to restrictions placed on us by Instructure,')
+                print('| the makers of Canvas.')
                 print("|----------------------------------------------------------------------")
                 print()
                 print()
