@@ -61,6 +61,7 @@ else:
             print(f"#    Start At: {course.get('start_at', 'N/A')}")
             print(f"#      End At: {course.get('end_at', 'N/A')}")
             print(f"#   Blueprint: {course.get('blueprint', 'N/A')}")
+            print(f'#    Calendar: {course.get('calendar', {}).get("ics", "N/A")}')
             print(f"# Course Link: https://canvas.illinois.edu/courses/{course.get('id', 'N/A')}")
             print("#--------------------------------------")
         if len(courseSections) > 1:
