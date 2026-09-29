@@ -21,14 +21,15 @@ menuText=$(cat <<'EOF'
     Please enter your choice:
 
     Canvas Course/User/Roster Info:
-       (a) Canvas: Get Single Course Enrollments (PROD-Live)
-       (b) Canvas: Get Enrollments for Single User in Banner Term (PROD-Live)
+       (a) Canvas: Get All Enrollments in a Single Course
+       (E) Canvas: Get Details on Single User Enrollment
+       (b) Canvas: Get All Enrollments for Single User in Banner Term
        (c) Canvas: Get Course Info (PROD)
-       (d) Canvas: Get User Info (PROD-live)
+       (d) Canvas: User Management (create new user or get user info)
        (e) Canvas: Audit Course Events
        (%) Canvas: Get All Student Completion Status in Course
        (=) Canvas: Move course dept/acct in Canvas and SRA
-       (?) Canvas: Student Access Report (optional upload to BOX)
+       (?) Canvas: Student Access Report
        (N) Canvas: Find New Quizzes in Course or Banner Term
        (H) Canvas: Course Content Copy to Another Course
        (f) Class Rosters: Get Course Memberships (PROD)
@@ -42,7 +43,6 @@ menuText=$(cat <<'EOF'
        (@) Canvas: Move Registrar-enabled Course (also affects SRA placement)
        (Z) Canvas: Export Course as Zip, Qti or CC
        (T) Canvas: User Token Management for API
-       (U) Canvas: Create User in Canvas
 
     Canvas Data 2:
        (j) CD2: Postgres Query
@@ -82,7 +82,7 @@ do
         "a") executeCommand "~/bin/canvas_course_enrollments_PROD.sh" ;;
         "b") executeCommand "~/bin/canvas_get_user_enrollments_live.sh" ;;
         "c") executeCommand "~/bin/canvas_get_course_info.sh" ;;
-        "d") executeCommand "~/bin/canvas_get_user_info_live.sh" ;;
+        "d") executeCommand "~/bin/canvas_user_mgmt.sh" ;;
         "e") executeCommand "~/bin/canvas_audit_course.sh" ;;
         "%") executeCommand "~/bin/canvas_get_bulk_user_progress_in_course.sh" ;;
         "=") executeCommand "~/bin/canvas_sra_move_course.sh" ;;
@@ -96,7 +96,6 @@ do
         "@") executeCommand "~/bin/canvas_sra_move_course.sh" ;;
         "Z") executeCommand "~/bin/canvas_export_course.sh" ;;
         "T") executeCommand "~/bin/canvas_token_mgmt.sh" ;;
-        "U") executeCommand "~/bin/canvas_create_user.sh" ;;
         "j") executeCommand "~/bin/cd2_query_db.sh" ;;
         "k") executeCommand "~/bin/ad_user_info.sh" ;;
         "l") executeCommand "~/bin/ad_roster_by_crn_or_space.sh" ;;
