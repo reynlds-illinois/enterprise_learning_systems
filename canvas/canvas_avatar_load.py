@@ -3,6 +3,7 @@ import json
 import os
 import sys
 import time
+from getpass import getpass
 from datetime import date, datetime
 from io import BytesIO
 
@@ -61,8 +62,8 @@ def getSuppressedUsers(ldapHost, ldapBindDn, ldapBindPw, ldapSearchBase, suppres
             suppressFile.write('\n'.join(sorted(ldapResults)))
     finally:
         ldapConn.unbind()
-    print(f"|=== Suppressed Accts Acquired: {len(ldapResults)}")
-    eventLog(f"|=== Suppressed Accts Acquired: {len(ldapResults)}", logLocation)
+    print(f"  >>> Suppressed Accts Acquired: {len(ldapResults)}")
+    eventLog(f"  >>> Suppressed Accts Acquired: {len(ldapResults)}", logLocation)
     print()
     return ldapResults
 
@@ -85,8 +86,8 @@ def getCanvasUsers(cd2AvatarsNeeded, pgHost, pgUser, pgPass, pgDb, pgPort, logLo
     finally:
         pgCursor.close()
         pgConn.close()
-    print(f'|=== CD2 Avatars Required: {len(cd2Records)}')
-    eventLog(f'|=== CD2 Avatars Required: {len(cd2Records)}', logLocation)
+    print(f'  >>> CD2 Avatars Required: {len(cd2Records)}')
+    eventLog(f'  >>> CD2 Avatars Required: {len(cd2Records)}', logLocation)
     print()
     return cd2Records
 
@@ -185,30 +186,31 @@ def uploadCanvasAvatar(imageFileName, imageFilePath, uin, netID, informApiUrl, a
 
 
 def main():
+    print()
     envDict = getEnv()
     while True:
         env = input('Please enter the realm to use: (p)rod or (b)eta: ').strip().lower()
         if env in ('p', 'b'):
             break
         print('Please enter p or b.')
-
+    print()
     canvasApi = envDict['canvas.api-prod'] if env == 'p' else envDict['canvas.api-beta']
-    print(f'Connected to: {canvasApi}')
-    canvasToken = input('Enter Canvas token: ').strip()
+    print(f'  >>> Connected to: {canvasApi}')
+    print()
+    canvasToken = getpass('  # Enter Canvas token (it will not display here): ')
     if not canvasToken:
         print('A Canvas token is required.')
         return 1
     authHeader = {'Authorization': f'Bearer {canvasToken}'}
-
     today = date.today().strftime('%Y-%m-%d')
     timeStart = datetime.now()
     logLocation = os.path.join(LOG_DIRECTORY, f'avatars_{today}.log')
     imageDirectory = os.path.join(WORKING_PATH, 'images')
     print()
-    print('   |------ TEMP LOCATIONS SET --------')
-    print(f'   |    Log Location: {logLocation}')
-    print(f'   | Image Directory: {imageDirectory}')
-    print('   |----------------------------------')
+    print('  |------ TEMP LOCATIONS SET --------')
+    print(f'  |    Log Location: {logLocation}')
+    print(f'  | Image Directory: {imageDirectory}')
+    print('  |----------------------------------')
     print()
     os.makedirs(os.path.dirname(logLocation), exist_ok=True)
     os.makedirs(imageDirectory, exist_ok=True)
