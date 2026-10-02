@@ -182,21 +182,25 @@ def main():
         print()
         boxTargetFolderID = createBoxFolder(boxParentFolderID, boxFolderName, requestorEmailAddress)
         print()
+        courseSequenceNum = 1
         for courseID in courseIDs:
             canvasCourseInfo = canvasGetCourseInfo(courseID, canvasAuth, canvasAPI)
             canvasCourseID = canvasCourseInfo['id']
+            canvasCourseSisId = canvasCourseInfo['sis_course_id']
             reportURL = f'{canvasURL}/courses/{canvasCourseID}/users/{canvasUserID}/usage'
-            targetFileName = f'tdx_{tdxTicket}_{netID}_{courseID}_access_report.pdf'
+            targetFileName = f'{courseSequenceNum}_tdx_{tdxTicket}_{netID}--{canvasCourseSisId}--access_report.pdf'
             targetFilePath = f'{reportsPath}{targetFileName}'
-            print(f'  > Processing course {canvasCourseID}...')
+            print(f'  > Processing course {canvasCourseSisId}...')
             student_access_report_export(driver, reportURL, targetFilePath)
             print()
             uploadFileToBox(targetFilePath, targetFileName, boxTargetFolderID)
             print()
+            courseSequenceNum += 1
     finally:
-        driver.quit()
-        print(">>> Browser closed <<<.")
-        print()
+        if driver:
+            driver.quit()
+            print(">>> Browser closed <<<.")
+            print()
 
 if __name__ == "__main__":
     main()
