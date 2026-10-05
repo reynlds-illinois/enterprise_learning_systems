@@ -579,11 +579,14 @@ def main():
 
         os.makedirs(REPORTS_PATH, exist_ok=True)
 
+        course_counter = 1
+
         for row in report_rows:
             course_id = row["course_id"]
             enroll_id = row["enroll_id"]
+            sis_course_id = row["sis_course_id"]
             report_url = f"{canvas_url}/courses/{course_id}/users/{student_canvas_id}/usage"
-            target_file_name = f"tdx_{tdx_ticket}_{student_net_id}_{course_id}_{enroll_id}_access_report.pdf"
+            target_file_name = f"{course_counter}_tdx_{tdx_ticket}_{student_net_id}--{sis_course_id}--access_report.pdf"
             target_file_path = os.path.join(REPORTS_PATH, target_file_name)
 
             print(f"  > Generating report for course {course_id} (enrollment {enroll_id})...")
@@ -607,6 +610,7 @@ def main():
                 print()
                 upload_failures.append({"course_id": course_id, "reason": f"upload failed: {err}"})
             print("")
+            course_counter += 1
 
     except Exception as ex:
         print(f">>> Unexpected error during report generation: {ex}")
